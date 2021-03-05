@@ -41,6 +41,9 @@ function _tcpy(tbl)
  return o
 end
 
+function _null()
+end
+
 function _rot(tbl)
  local tl=#tbl
  local fst=tbl[1]
@@ -298,8 +301,8 @@ function _gint()
  wave=0
  elitecut=90
 -- emake(driller,64,-300,
---       {mov=function(self) return null end,
---        ondead=function(self) return null end,
+--       {mov=_null,
+--        ondead=_null,
 --        n="targ"})
  for i=1,#dtypes do
   dtypes[i](i*16,60)
@@ -622,9 +625,9 @@ function genent(x,y)
   hsfx=1,
   val=100, --unused by player curr
   make=emake,
-  ebhv=function(self) return null end,
-  fpattern=function(self) return null end,
-  onhit=function(self) return null end,
+  ebhv=_null,
+  fpattern=_null,
+  onhit=_null,
   ondead=simpledeath,
   mov=_bouncedown,
   upd=function(self)
@@ -1058,7 +1061,7 @@ function boom(x,y)
  local e=genent(x,y)
  local n={
   l=6,
-  ondead=function(self) return null end,
+  ondead=_null,
   upd=function(self)
 -- explosions only stay up for
 -- .5s before disappearing
