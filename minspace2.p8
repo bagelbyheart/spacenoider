@@ -1,15 +1,15 @@
 pico-8 cartridge // http://www.pico-8.com
-version 30
+version 32
 __lua__
 --minspace
 --by bagelbyheart
 
 -- > tools
---function check(tbl)
--- for k,v in pairs(tbl) do
---  print(k.." "..type(v))
--- end
---end
+function check(tbl)
+ for k,v in pairs(tbl) do
+  print(k.." "..type(v))
+ end
+end
 
 function _pprint(str,xoff,yoff,
                  col1,col2)
@@ -199,6 +199,10 @@ function _init()
  enemytypes()
  entities=entities or {}
  pmake(60,90)
+ tl={x=0,y=0}
+ br={x=127,y=127}
+ htl={x=0,y=br.y-18}
+ hbr={x=tl.x+128,y=br.y}
 -- grab the player entity
 -- faction 1 == player
  for e in all(entities) do
@@ -334,6 +338,14 @@ function _gupd()
 -- screens from player.
   local b=256
   for e in all(entities) do
+   if e.l==5 then
+    if e.x<tl.x-4 or
+       e.y<tl.y-8 or
+       e.x>br.x+4 or
+       e.y>br.y then
+     del(entities,e)
+    end
+   end
    if e.n!="targ" then
     if e.n=="laser" or
        e.n=="missile" then
@@ -362,19 +374,19 @@ end
 
 function hud()
 -- top left and bottom right
- local tl={x=0,y=127-18}
- local br={x=tl.x+128,y=tl.y+15}
+-- local tl={x=0,y=127-18}
+-- local br={x=tl.x+128,y=tl.y+15}
 -- backing block
- rectfill(tl.x,tl.y,br.x,br.y,1)
+ rectfill(htl.x,htl.y,hbr.x,hbr.y,1)
 -- score display
- print(score.co,tl.x+89,tl.y+3,
+ print(score.co,htl.x+89,htl.y+3,
        11)
 -- weapons display.
 -- starts 51,2px offset from tl.
  for i=0,2 do
   spr(58,
-      tl.x+(i*9)+51,
-      tl.y+2)
+      htl.x+(i*9)+51,
+      htl.y+2)
  end
 -- weapon icons.
 -- for each weapon in fire tbl
@@ -382,11 +394,11 @@ function hud()
 -- 51,2px offset from tl.
  for i=1,#p.guns do
   spr(p.guns[i].i[1],
-      tl.x+((i-1)*9)+51,
-      tl.y+2)
+      htl.x+((i-1)*9)+51,
+      htl.y+2)
  end
 -- health icon
- spr(57,tl.x+1,tl.y+1)
+ spr(57,htl.x+1,htl.y+1)
  local ct=1
 -- for each in possible health
 -- counting by twos.
@@ -401,13 +413,13 @@ function hud()
    i=55
   end
 -- placed 4px from tl + ct*4.
-  spr(i,tl.x+4+ct*4,
-      tl.y+3)
+  spr(i,htl.x+4+ct*4,
+      htl.y+3)
 -- increment ct.
   ct+=1
   end
 -- bomb icon.
- spr(51,tl.x+1,tl.y+9)
+ spr(51,htl.x+1,htl.y+9)
 -- do the same thing for mbomb
 -- but without the 2 count.
 -- local ct=1
