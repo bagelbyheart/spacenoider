@@ -1,0 +1,1476 @@
+pico-8 cartridge // http://www.pico-8.com
+version 30
+__lua__
+--minspace
+--by bagelbyheart
+
+-- > tools
+--function check(tbl)
+-- for k,v in pairs(tbl) do
+--  print(k.." "..type(v))
+-- end
+--end
+
+function _pprint(str,xoff,yoff,
+                 col1,col2)
+ local col1=col1 or 7
+ local col2=col2 or (col1-2)
+ local xoff=xoff or 0
+ local yoff=yoff or 0
+ local str=tostr(str)
+ local x=((128-(#str*4))/2)+
+         xoff
+ local y=((128)/2)+yoff+1
+ local outline={{-1,0},{1,0},
+                {0,-1},{0,1},
+                {-1,-1},{1,1},
+                {-1,1},{1,-1}}
+ for t=1,#outline do
+  print(str,x+outline[t][1],
+        y+outline[t][2],col2)
+ end
+ print(str,x,y,col1)
+end
+
+function _tcpy(tbl)
+ local t=tbl
+ local o={}
+ for k,v in pairs(t) do
+  o[k]=v
+ end
+ return o
+end
+
+function _rot(tbl)
+ local tl=#tbl
+ local fst=tbl[1]
+ del(tbl,tbl[1])
+ add(tbl,fst)
+end
+
+function _mrot()
+ _rot(_modes)
+ _modes[1]()
+end
+
+function _mobj(obj,spd)
+ spd=obj.spd or spd or 1
+ if (btn(⬅️)) then
+  obj.x-=spd obj.r=false end
+ if (btn(➡️)) then
+  obj.x+=spd obj.r=true end
+ if (btn(⬆️)) then obj.y-=spd end
+ if (btn(⬇️)) then obj.y+=spd end
+end
+
+function _ovrlp(a,b)
+ return not (a.x>b.x+b.w or
+             a.y>b.y+b.h or
+             a.x+a.w<b.x or
+             a.y+a.h<b.y)
+end
+
+function _frmct()
+ f=f or 0
+ f+=1
+ --if (f>149) then f=0 end
+end
+
+function _pswap()
+ for i=1,15 do
+  pal(i,(i+6)%15+1)
+ end
+end
+
+function _score()
+ return {
+  cu=0, cl=0, co="",
+  hu=dget(62), hl=dget(63),
+  ho="",
+  init=function(self)
+   score.cu=0 score.cl=0
+   score.new=0
+  end,
+  add=function(val)
+   score.cl+=val
+   if score.cl>9999 then
+    score.cu+=1
+    score.cl=score.cl-10000
+   end
+  end,
+  pad=function(n,len)
+   local nlen=#tostr(n)
+   local ostr=n
+   if nlen<len then
+    for z=1,len-nlen do
+     ostr="0"..ostr
+    end
+   end
+   return ostr
+  end,
+  upd=function(self)
+   if score.cu>score.hu then
+    score.new=1
+    score.hu=score.cu
+    score.hl=score.cl
+    dset(62,score.hu)
+    dset(63,score.hl)
+   end
+   if score.cu==score.hu then
+    if score.cl>score.hl then
+     score.new=1
+     score.hl=score.cl
+     dset(62,score.hu)
+     dset(63,score.hl)
+    end
+   end
+   score.co=score.pad(score.cu,4)..
+            score.pad(score.cl,4)
+   score.ho=score.pad(score.hu,4)..
+            score.pad(score.hl,4)
+  end,
+  dra=function(self,x,y)
+   local x=x or 1
+   local y=y or 1
+   print("curr:"..score.co,
+         x,y,7)
+   print("high:"..score.ho,
+         x,y+8,7)
+  end
+ }
+end
+ 
+function _dist(a,b)
+ local d={}
+ d.x=a.x-b.x
+ d.y=a.y-b.y
+ for k,v in pairs(d) do
+  if (v<0) then d[k]=-v end
+ end
+ return d.x+d.y or 0
+end
+
+function _nearest(a,tbl)
+ local cc=300
+ local ct={x=64,y=-50}
+ for i in all(tbl) do
+  i.d=_dist(a,i)
+  if i.d<cc then
+   cc=i.d
+   ct=i
+  end
+ end
+ return ct
+end
+
+function _hseek(a,t)
+ a.sx=a.sx or 0
+ a.sy=a.sy or 0
+ if (a.x<t.x) then a.sx+=.2 end
+ if (a.x>t.x) then a.sx-=.2 end
+ if (a.y<t.y) then a.sy+=.2 end
+ if (a.y>t.y) then a.sy-=.2 end
+ a.sy=mid(-5,a.sy,5)
+ a.sx=mid(-2,a.sx,2)
+ a.x+=a.sx
+ a.y+=a.sy
+end
+
+-->8
+-- > visual effects
+var="holder"
+
+-->8
+-- > loops
+-- > main loop
+function _init()
+-- setup game modes
+-- _mint is menu _gint is game
+ _modes={_mint,_gint}
+ cartdata(
+  "bagelbyheart_minspace_1")
+-- create a score object
+ score=_score()
+-- create the player object
+ bullettypes()
+ enemytypes()
+ entities=entities or {}
+ pmake(60,90)
+-- grab the player entity
+-- faction 1 == player
+ for e in all(entities) do
+  if (e.faction==1) p=e
+ end
+-- music(0,1000)
+-- switch to menu game mode
+ _mint()
+end
+
+function _update()
+-- track frame every update
+-- track score every update
+-- run real update
+ _frmct()
+ score.upd()
+ _upd()
+end
+
+function _draw()
+ _dra()
+end
+
+-- > menu loop
+function _mint()
+-- change mode
+-- replace update and draws
+-- reset current score
+-- reset player
+ _mode="menu"
+ _upd=_mupd
+ _dra=_mdra
+ score.init()
+ p:rst()
+end
+
+function _mupd()
+-- run update functions for all
+-- entities. this will be handy
+-- if we have the game demo in
+-- the background
+ for e in all(entities) do
+  e:upd()
+ end
+-- 🅾️ starts the game
+ if (btnp(❎)) then
+  _mrot() end
+end
+
+function _mdra()
+-- right now clear screen is in
+-- each individual mode so i can
+-- have a bit more control
+-- but i'm not really using that
+-- control right now
+ cls()
+-- just like i want to upd all
+-- entities for a demo mode i
+-- also want to keep drawing
+-- them
+ for e in all(entities) do
+  e:dra()
+ end
+-- then everything past here is
+-- the actual title, etc
+-- randomize colors
+ if f%4 == 0 then
+  ta=rnd(15)
+  tb=mid(1,ta+rnd(4),15)
+ end
+ _pprint("spacenoider!",
+         0,-10,ta,tb)
+ _pprint("press ❎(x) to start",
+         0,0)
+ _pprint("hi-score:"..score.ho,
+         0,-62)
+ _pprint("move:⬅️⬆️⬇️➡️ "..
+         "bomb:🅾️ fire:❎",
+         -10,56,3,11)
+end
+
+-- > game loop
+function _gint()
+-- change mode
+-- replace update and draws
+-- reset current score
+-- reset player, bullets, drops
+ _mode="game"
+ _upd=_gupd
+ _dra=_gdra
+ score.init()
+ p:rst()
+ drops={}
+-- set types of drops
+ dtypes={life,lasr,misl,blam}
+-- starting wave and percent
+-- cutoff for elites
+-- these could become a single
+-- value
+ wave=0
+ elitecut=90
+-- emake(driller,64,-300,
+--       {mov=function(self) return null end,
+--        ondead=function(self) return null end,
+--        n="targ"})
+ for i=1,#dtypes do
+  dtypes[i](i*16,60)
+ end
+end
+
+function _gupd()
+ for layer=1,6 do
+  for e in all(entities) do
+   if e.l==layer then
+    e:upd()
+   end
+  end
+ end
+ if p.chp<=0 then
+  if (btnp(❎)) _mrot()
+ else
+  waves()
+ for e in all(entities) do
+  if e.l==4 then
+  if e.chp<=0 then
+   if rnd(100)>80 then
+    rnd(dtypes)(e.x,e.y)
+   end
+  end
+  end
+ end
+-- simple bounding based on 2
+-- screens from player.
+  local b=256
+  for e in all(entities) do
+   if e.n!="targ" then
+    if e.n=="laser" or
+       e.n=="missile" then
+     b=100
+    end
+    if abs(e.x-p.x)>b or
+       abs(e.y-p.y)>b then
+     del(entities,e)
+    end
+   end
+  end
+ end
+end
+
+function _gdra()
+ cls()
+ for layer=6,1,-1 do
+  for e in all(entities) do
+   if e.l==layer then
+    e:dra()
+   end
+  end
+ end
+ hud()
+end
+
+function hud()
+-- top left and bottom right
+ local tl={x=0,y=127-18}
+ local br={x=tl.x+128,y=tl.y+15}
+-- backing block
+ rectfill(tl.x,tl.y,br.x,br.y,1)
+-- score display
+ print(score.co,tl.x+89,tl.y+3,
+       11)
+-- weapons display.
+-- starts 51,2px offset from tl.
+ for i=0,2 do
+  spr(58,
+      tl.x+(i*9)+51,
+      tl.y+2)
+ end
+-- weapon icons.
+-- for each weapon in fire tbl
+-- draw spr from that index at
+-- 51,2px offset from tl.
+ for i=1,#p.guns do
+  spr(p.guns[i].i[1],
+      tl.x+((i-1)*9)+51,
+      tl.y+2)
+ end
+-- health icon
+ spr(57,tl.x+1,tl.y+1)
+ local ct=1
+-- for each in possible health
+-- counting by twos.
+ for l=1,p.mhp,2 do
+-- set spr to use
+  local i=0
+  if l<=p.chp then
+-- if l is under ch use full.
+   i=54
+  else
+-- otherwise empty.
+   i=55
+  end
+-- placed 4px from tl + ct*4.
+  spr(i,tl.x+4+ct*4,
+      tl.y+3)
+-- increment ct.
+  ct+=1
+  end
+-- bomb icon.
+ spr(51,tl.x+1,tl.y+9)
+-- do the same thing for mbomb
+-- but without the 2 count.
+-- local ct=1
+-- for l=1,p.mbomb do
+--  local i=0
+--  if l<=p.cbomb then
+--   i=38
+--  else
+--   i=39
+--  end
+--  spr(i,tl.x+4+ct*4,
+--      tl.y+10)
+--  ct+=1
+--  end 
+-- handle score display, etc
+-- on death.
+ if p.chp<=0 then
+  if score.new==1 then
+   _pprint("new high score!",
+           0,-10,11,3)
+  else
+   _pprint("ur ded.",
+           0,-10,8,10)
+  end
+  _pprint("u scored "..
+          score.co..
+          " points!",
+          0,0,0,10)
+  _pprint("press ❎(x) to "..
+          "restart",
+          0,10)
+ end
+end
+
+-- this function handles spawn
+-- of new enemies over time.
+-- normally it would be called
+-- on page 4.
+function waves()
+  if f%150==0 then
+   wave+=1
+-- make elites more likely
+-- 90   - 1*5/2 = 87.5
+-- 87.5 - 2*5/2 = 82.5
+-- 82.5 - 3*5/2 = 75
+-- elitecut can probably be
+-- removed and directly ref'd
+-- in spawn routine.
+   elitecut-=(wave*5)/2
+   local rand=rnd(1)
+-- 15% to spawn bombers.
+   if rand>=.85 then
+    _sline(bomber,4)
+-- 35% to spawn gunners.
+   elseif rand>.5 then
+    _sline(gunner,4)
+-- 50% to spawn drillers.
+   else
+    _dline(driller,8)
+   end
+  end
+end
+
+function wavetest()
+ if f%150==0 then
+  wave+=1
+  _sline(driller,4)
+ end
+end
+
+-->8
+-- > entity functions
+
+-- enemy declarations.
+-- this could use a generic ala
+-- gengun (page 6).
+function enemytypes()
+
+gunner={
+ n="gunner",
+ spr={33,34,35},
+ chp=4,
+ aspd=10,
+ val=400,
+ spd=.5,
+ gun=vulcan,
+ mov=_sideside,
+ dra=function(self)
+  _pswap()
+  spr(self.spr[1],self.x,
+      self.y)
+  pal()
+ end
+}
+
+bomber={
+ n="bomber",
+ spr={33,34,35},
+ val=1000,
+ aspd=10,
+ gun=missile,
+ mov=_circles,
+ ebhv=function(self)
+  local e=self
+  if (e.elite) then
+  if (e.elite>elitecut) then
+   e.val=e.val*4
+  end
+  end
+ end
+}
+
+driller={
+ n="driller",
+ elite=rnd(100),
+ spr={17,18,19,20,21,22},
+ ebhv=function(self)
+  local e=self
+  if (e.elite>elitecut) then
+   e.yd=e.spd*2 e.chp=e.chp*2
+   e.val=e.val*4
+  end
+ end
+}
+end
+
+function bullettypes()
+
+ vulcan={
+  i={52},
+  n="vulcan",
+  spr={4,5,6},
+  val=0,
+  aspd=5,
+  spd=2,
+  dam=2, lim=8,
+  fsfx=9, hsfx=11,
+  onhit=bullhit,
+  make=bmake
+ }
+ 
+ laser={
+  n="laser", --name
+  i={53},    --icon
+  spr={7,8},
+  w=1, h=7,
+  spd=4,
+  chp=30,
+  fsfx=2, hsfx=5,
+  dam=1,
+  lim=4,
+  onhit=function(self,e)
+   e.chp-=self.dam
+   sfx(self.hsfx)
+   boom(self.x,self.y)
+  end,
+  make=bmake
+ }
+ 
+ missile={
+  n="homing", --name
+  i={56},     --icon
+  t=0,
+  spr={9,10},
+  w=4, h=4,
+  spd=4,
+  fsfx=9, hsfx=11,
+  dam=6,
+  lim=4,
+  make=bmake,
+  mov=function(self)
+   local enemies={}
+   for e in all(entities) do
+    if e.l==1 or e.l==4 then
+    if e.faction!=self.faction then
+     add(enemies,e)
+    end
+    end
+   end
+   local t=_nearest(self,
+                    enemies)
+   _hseek(self,t)
+  end
+ }
+
+ ngun={
+  n="null",
+  i={0},
+  make=function(self)
+   return null
+  end
+ }
+end
+
+function genent(x,y)
+ local e={
+  f=0,
+  l=0,
+  i={0},
+  n="uh oh",
+  ifr=0,
+  x=x,
+  y=y,
+  xd=0,yd=0,
+  mx=0,my=0,r=6,
+  w=8,
+  h=8,
+  faction=0,
+  dam=2,
+  spd=1, --spd for player curr
+  spr={1},
+  aspd=10,
+  lim=8,
+  fsfx=1,
+  hsfx=1,
+  val=100, --unused by player curr
+  make=emake,
+  ebhv=function(self) return null end,
+  fpattern=function(self) return null end,
+  onhit=function(self) return null end,
+  ondead=simpledeath,
+  mov=_bouncedown,
+  upd=function(self)
+   if self.chp<=0 then
+    self:ondead()
+   else
+    if self.f%self.aspd==0 then
+     _rot(self.spr) end
+    self.f+=1
+    if self.ifr<=0 then
+     for e in all(entities) do
+      if e.l==1 or e.l==4 then
+      if e.faction!=self.faction then
+       if _ovrlp(e,self) then
+        self:onhit(e)
+       end
+      end
+      end
+     end
+    else
+     self.ifr-=1
+    end
+    self:fpattern()
+    self:mov()
+   end
+  end,
+  dra=function(self)
+   if self.elite then
+    if self.elite>elitecut then
+     _pswap()
+    end
+   end
+   if self.ifr>0 and
+      self.f%2==0 then
+    _pswap()
+   end
+   if (self.chp>0) then
+    spr(self.spr[1],
+        self.x,self.y)
+--    print(self.yd,
+--          self.x,self.y,10)
+    pal()
+   end
+
+  end
+
+ }
+ return e
+end
+
+function shipent(x,y)
+ local e=genent(x,y)
+ local s={
+  chp=2, --ch and mh for player curr
+  mhp=2,
+  guns={ngun}, --fire for player curr
+  gun=ngun, --unused for player curr
+  frate=function(self)
+   return self.f%(90+(flr(rnd(60))-30))
+  end
+ }
+ for k,v in pairs(s) do
+  e[k]=v
+ end
+ return e
+end
+
+function playent(x,y)
+ local e=shipent(x,y)
+ local p={
+  l=1,
+  w=6,
+  h=6,
+  spr={1,2,3},
+  spd=2,
+  faction=1,
+  chp=16,
+  mhp=16,
+  guns={vulcan},
+  onhit=playhit,
+  ondead=hidedead,
+  fpattern=playfir,
+  mov=playmov,
+  rst=function(self)
+   self.chp=8
+   self.x,self.y=x,y
+-- delete all non player ents.
+   for e in all(entities) do
+    if e.faction!=1 then
+     del(entities,e)
+    end
+   end
+  end
+ }
+ for k,v in pairs(p) do
+  e[k]=v
+ end
+ return e
+end
+
+function foeent(x,y)
+ local e=shipent(x,y)
+ local f={
+  l=4,
+  faction=2,
+  onhit=bullhit,
+  ebhv=function(self)
+   return null end,
+  fpattern=firerand
+ }
+ for k,v in pairs(f) do
+  e[k]=v
+ end
+ return e
+end
+
+function bullent(x,y)
+ local e=shipent(x,y)
+ local f={
+  l=5,
+  faction=2,
+  onhit=bullhit
+ }
+ for k,v in pairs(f) do
+  e[k]=v
+ end
+ return e
+end
+
+function bmake(en,x,y,more)
+ local e=_tcpy(bullent(x,y))
+ for k,v in pairs(en) do
+  e[k]=v
+ end
+ if more then
+  for k,v in pairs(more) do
+   e[k]=v
+  end
+ end
+ e:ebhv()
+ if limitmake(e) then
+  add(entities,e)
+  sfx(e.fsfx)
+ end
+end
+
+function emake(en,x,y,more)
+ local e=_tcpy(foeent(x,y))
+ for k,v in pairs(en) do
+  e[k]=v
+ end
+ if more then
+  for k,v in pairs(more) do
+   e[k]=v
+  end
+ end
+ e:ebhv()
+ if limitmake(e) then
+  add(entities,e)
+  sfx(e.fsfx)
+ end
+end
+
+function pmake(x,y,more)
+ local e=_tcpy(playent(x,y))
+ if more then
+  for k,v in pairs(more) do
+   e[k]=v
+  end
+ end
+ add(entities,e)
+end
+
+-->8
+-- > control functions
+-- > spawn functions
+function limitmake(ent)
+ if ent.lim then
+  local l=0;
+  for e in all(entities) do
+   if e.n==ent.n and
+      e.faction==ent.faction then
+    l+=1
+   end
+  end
+  if l<ent.lim then
+   return true
+  else
+   return false
+  end
+ else
+  return true
+ end
+end
+
+function _sline(e,n,more)
+-- e = an entity function.
+-- n = number of e to spawn.
+ local ydir=ydir or 0
+-- randomize y and x offset.
+ local yoff=rnd({0,10})
+ if (ydir==1) then
+  yoff=-yoff end
+ local xoff=rnd({-7,50})
+-- randomize frame offset so
+-- enemies don't shoot at the
+-- the same time.
+ local foff=rnd({0,5,10})
+-- this lets you spawn single
+-- enemies if you call with no
+-- arg
+ local n=n or 1
+-- currently enemies are placed
+-- via dead reckoning but this
+-- will become more manual.
+ for i=1,n do
+  local x=i*16+xoff
+  local y=10+yoff
+  emake(e,x,y,more)
+ end
+end
+
+function _dline(e,n,more)
+ local yoff=rnd({-10,10})
+ local xoff=8
+ local foff=rnd({0,5,10})
+ local n=n or 1
+ for i=1,n do
+  local x=i*12+xoff
+  local y=i*yoff
+  emake(e,x,y,more)
+ end
+end
+
+-- > movement functions
+
+function _bouncedown(self)
+if self.xd==0 then
+ self.yd=self.spd
+end
+if self.faction==1 then
+ if self.yd>=0 then
+  self.yd=-self.yd
+ end
+end
+-- using this causes an entity
+-- to fall down, bouncing back
+-- and forth as it hits the
+-- sides of the screen.
+-- first we start the movement.
+ self.x+=self.xd
+ self.y+=self.yd
+-- then we do checks about it.
+-- lx and ux define the sides.
+ local lx=10 ux=118
+ if self.x >= ux or
+    self.x <= lx then
+-- if we go past either, we
+-- reverse xd
+-- add xd to x
+-- then pick the middle value
+-- out of x, low, and upper
+-- bounds to place our ship.
+  self.xd=-self.xd
+  self.x+=self.xd
+  self.x=mid(self.x,lx,ux)
+ end
+-- if the entity goes a ways
+-- past the bottom of the
+-- screen it gets deleted.
+ if self.y > 150 then
+  del(entities,self)
+ end
+end
+
+function _sideside(self)
+ if self.xd==0 then
+  self.xd=.5
+ end
+ if self.f%90<30 then
+  self.x+=self.xd
+ elseif self.f%90>=30 and
+        self.f%90<60 then
+  self.x-=self.xd
+ else
+  self.x=self.x
+ end
+end
+
+
+function _circles(self)
+ if self.mx==0 then
+  self.mx=self.x
+  self.my=self.y
+ end
+   local lx=10 ux=118
+   if self.x > ux then
+    self.x=ux-(self.x-ux)
+   end
+   if self.x < lx then
+    self.x=lx+(lx-self.x)
+   end
+   self.x=self.r*
+          sin(self.f/50)+
+          self.mx
+   self.y=self.r*
+          cos(self.f/50)+
+          self.my
+end
+
+function playmov(self)
+ local ly=10 uy=97
+ if self.y > uy then
+  self.y=uy end
+ if self.y < ly then
+  self.y=ly end
+ local lx=0 ux=120
+ if self.x > ux then
+  self.x=ux end
+ if self.x < lx then
+  self.x=lx end
+ _mobj(self)
+end
+
+-- > fire functions
+function playfir(self)
+ if _mode=="game" then
+ if btnp(❎) then
+  self.guns[1]:make(self.x,self.y,
+             {faction=1})
+--  self.guns[1].f(self.x,self.y,
+--                 self.faction)
+ end
+ if btnp(🅾️) then
+  _rot(self.guns)
+ end
+ end
+end
+
+function firerand(self)
+ local frate=self.f%(90+(flr(rnd(60))-30))
+ if self:frate()==0 then
+  self.gun:make(self.x,self.y,{faction=2})
+ end
+end
+
+-- > onhit functions
+function playhit(self,e)
+--   if self.ifr<=0 then
+--    for e in all(entities) do
+--     if e.faction!=self.faction then
+--     if _ovrlp(e,self) then
+      self.ifr=30
+      e.chp-=self.dam
+      --self.chp-=e.dam
+      sfx(self.hsfx)
+      boom(self.x,self.y)
+--     end
+--     end
+--    end
+--   else
+-- decrease invincible frames
+--    self.ifr-=1
+--   end
+end
+
+function bullhit(self,e)
+ e.chp-=self.dam
+ sfx(self.hsfx)
+ boom(self.x,self.y)
+ del(entities,self)
+end
+
+-- > ondead functions
+function hidedead(self)
+ if (self.chp<=0) then self.y=256 end
+end
+
+function simpledeath(self)
+-- this handles death
+-- for most enemies.
+-- it makes a boom at their
+-- midpoint using w,h/2
+-- adds their value to the
+-- score, and deletes them.
+ boom(self.x+(self.w/2),
+      self.y+(self.h/2))
+ score.add(self.val)
+ del(entities,self)
+end
+-->8
+-- > bullet functions
+
+-- right now this function
+-- runs alone on all bullets
+-- but it should be reworked
+-- to a per bullet function
+-- that can be imported into
+-- each bullet on creation
+-- that way different types
+-- can have different bounding
+function allbullets()
+ for b in all(bullets) do
+  if b.f%b.aspd==0 then
+   _rot(b.spr)
+  end
+  b.f+=1
+  local ly=-20 uy=110
+  local lx=-10 ux=138
+  if b.y > uy or
+     b.y < ly or
+     b.x > ux or
+     b.x < lx then
+   del(bullets,b)
+  end
+ end
+end
+
+-->8
+-- > boom functions
+
+-- boom is what appears when
+-- something gets hit, it also
+-- appears under everything but
+-- the starfield.
+-- right now it's its own tbl
+-- but eventually it will be a
+-- layer type.
+function boom(x,y)
+ local c=8
+ local e=genent(x,y)
+ local n={
+  l=6,
+  ondead=function(self) return null end,
+  upd=function(self)
+-- explosions only stay up for
+-- .5s before disappearing
+   self.f+=1
+   if self.f>10 then
+    del(entities,self) end
+  end,
+  dra=function(self)
+-- boom just draws a circle that
+-- expands over 15 frames.
+   circ(self.x,self.y,
+        self.f/2,self.f%4+c)
+  end
+ }
+ for k,v in pairs(n) do
+  e[k]=v
+ end
+ add(entities,e)
+end
+
+-- currently bomb is triggered
+-- by the player pressing 🅾️
+-- (see page 4) but i think will
+-- eventually auto fire on get.
+
+function bomb()
+ local c=8
+ local already=0
+ for b in all(entities) do
+  if (b.n=="bomb") then already=1 end
+ end
+ if already==0 then
+  e=genent(60,60)
+  b={
+   l=6,
+   upd=function(self)
+    self.f+=1
+    if self.f>60 then
+     for e in all(entities) do
+      if e.l==4 then
+       if e.faction==2 then
+        e.chp-=10
+       end
+      end
+     end
+     del(entities,self)
+    end
+   end,
+   dra=function(self)
+    circ(p.x+3,p.y+2,
+         self.f/6,self.f%4+c-2)
+    for e in all(entities) do
+     if e.l==4 then
+      if (e.faction==2) then
+       cx=e.x+(e.w/2)
+       cy=e.y+(e.h/2)
+       line(p.x+3,p.y+2,
+            cx,cy,
+            self.f%4+c+1)
+       circfill(cx,cy,
+                self.f/8,
+                self.f%4+c+1)
+      end
+     end
+    end
+   end
+  }
+  for k,v in pairs(b) do
+   e[k]=v
+  end
+  add(entities,e)
+ end
+end
+
+-- > pickup functions
+function drnd()
+ return rnd({-1,1})
+end
+
+gendrop=genent(60,60)
+gendrop.l=2
+gendrop.sx=1
+gendrop.sy=1
+gendrop.w=4
+gendrop.h=4
+gendrop.spd=2
+gendrop.faction=1
+gendrop.act=function(self)
+ sfx(self.hsfx)
+end
+gendrop.upd=function(self)
+ if _ovrlp(p,self) then
+  boom(self.x,self.y)
+  score.add(self.val)
+  self:act()
+  del(entities,self)
+ end
+ if self.f>=150 then
+  del(entities,self)
+ end
+ if self.f%15==0 then
+  _rot(self.spr) end
+ self.f+=1
+ local ly=16 uy=100
+ if self.y > uy or
+    self.y < ly then
+  self.sy=-self.sy
+ end
+ local lx=16 ux=112
+ if self.x > ux or
+    self.x < lx then
+  self.sx=-self.sx
+ end
+ self.x=mid(self.x,lx,ux)
+ self.y=mid(self.y,ly,uy)
+ self.x+=self.sx
+ self.y+=self.sy
+end
+gendrop.dra=function(self)
+ if self.f>100 then
+  if self.f%2==0 then
+   _pswap()
+  end
+ end
+ spr(self.spr[1],self.x,
+     self.y)
+ pal()
+end
+
+
+function life(x,y)
+ local t=gendrop
+ local d={}
+ for k,v in pairs(t) do
+  d[k]=v
+ end
+ d.x=x or 60
+ d.y=y or 60
+ d.sy=drnd()
+ d.sx=drnd()
+ sfx(d.fsfx)
+ d.hsfx=3
+ d.spr={57}
+ d.w=4
+ d.h=6
+ d.val=100
+ d.act=function(self)
+  sfx(self.hsfx)
+  p.chp+=2
+  mid(0,p.chp,p.mh)
+ end
+ add(entities,d)
+end
+
+function lasr(x,y)
+ local t=gendrop
+ local d={}
+ for k,v in pairs(t) do
+  d[k]=v
+ end
+ d.x=x or 60
+ d.y=y or 60
+ d.sy=drnd()
+ d.sx=drnd()
+ sfx(d.fsfx)
+ d.spr={53}
+ d.w=8
+ d.h=8
+ d.val=1000
+ d.hsfx=2
+ d.act=function(self)
+  sfx(self.hsfx)
+  local have=0
+  for i=1,#p.guns do
+   if (p.guns[i]==laser) p.guns[i].t=0 have=1
+  end
+  if (have!=1) add(p.guns,laser)
+ end
+ add(entities,d)
+end
+
+function misl(x,y)
+ local t=gendrop
+ local d={}
+ for k,v in pairs(t) do
+  d[k]=v
+ end
+ d.x=x or 60
+ d.y=y or 60
+ d.sy=drnd()
+ d.sx=drnd()
+ sfx(d.fsfx)
+ d.spr={56}
+ d.w=8
+ d.h=8
+ d.val=1000
+ d.hsfx=2
+ d.act=function(self)
+  sfx(self.hsfx)
+  local have=0
+  for i=1,#p.guns do
+   if (p.guns[i]==missile) p.guns[i].t=0 have=1
+  end
+  if (have!=1) add(p.guns,missile)
+ end
+ add(entities,d)
+end
+
+function blam(x,y)
+ local t=gendrop
+ local d={}
+ for k,v in pairs(t) do
+  d[k]=v
+ end
+ d.x=x or 60
+ d.y=y or 60
+ d.sy=drnd()
+ d.sx=drnd()
+ sfx(d.fsfx)
+ d.spr={51}
+ d.w=8
+ d.h=8
+ d.val=1000
+ d.hsfx=2
+ d.act=function(self)
+  sfx(self.hsfx)
+  bomb()
+  --if (p.cbomb<p.mbomb) p.cbomb+=1
+ end
+ add(entities,d)
+end
+__gfx__
+0000000008008000080080000800800099000000aa00000099000000c00000007000000008900000097000000000000000000000000000000000000000000000
+0000000008668000086680000866800099000000aa00000099000000c00000007000000058850000599500000000000000000000000000000000000000000000
+0070070008cc800008cc800008cc8000aa00000077000000aa000000c00000007000000055550000555500000000000000000000000000000000000000000000
+0007700088c7880088c7880088c78800000000000000000000000000c00000007000000009900000088000000000000000000000000000000000000000000000
+00077000221122002211220022112200000000000000000000000000c00000007000000000000000000000000000000000000000000000000000000000000000
+007007000077000000cc000000cc0000000000000000000000000000c00000007000000000000000000000000000000000000000000000000000000000000000
+00000000000000000077000000000000000000000000000000000000c00000007000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000007777000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000009700000097000000970000009700000097000000970000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000009999000099990000999900009999000099990000999900000000000000000000000000000000000bbbbbbb000000000000000000000000000000000
+00000000855558002555580085555200255558002555520085555200000000000000000000000000000000000000000000000000000000000000000000000000
+00000000028220000822800002288000028820000882800008282000000000000000000000000000000000000333333000000000000000000000000000000000
+00000000056550000655600005565000056650000665600006565000000000000000000000000000000000000300003000000000000000000000000000000000
+0000000000650000005600000066000000650000005600000065000000000000000000000000000000000000030bb03000000000000000000000000000000000
+0000000000560000006600000065000000560000006600000055000000000000000000000000000000000000030bb03000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300003000000000000000000000000000000000
+000000000000000000000000077770000000000000000000bbb00000333000000000000000000000000000000333333000000000000000000000000000000000
+000000000000000000770000000000000000000000000000bbb00000333000000003333300033333333030030030300000000000000000000000000000000000
+000000000077000000cc000000cc000000000000000000003330000033300000bb0000303030303030303333330300b000000000000000000000000000000000
+000000000855800008558000085580000000000000000000000000000000000000b00300300000300000300003000b0000000000000000000000000000000000
+0000000082972800829728008297280000000000000000000000000000000000000b003333333333333333330300b00000000000000000000000000000000000
+00000000229922002299220022992200000000000000000000000000000000000000b0000000000000000000000b000000000000000000000000000000000000
+000000008866880088668800886688000000000000000000000000000000000000000bbbbbbbbbbbbbbbbbbbbbb0000000000000000000000000000000000000
+00000000050050000500500005005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000070700cc0000000bbbb000bbb00bbbbbb00bbbbbb0000033300000bbb00bbb00bb0000bbb00bbb0000000000000000000000000000000000000000
+0000000000909090cc000000bb00bb00b003300bb00bb00bbbb0000033300000b000000bb0000b00b000000b0000000000000000000000000000000000000000
+000000000979790766000000b0030b00b033330bb00bb00bbbb0000033300000b00bb00bb0330b00b000000b0000000000000000000000000000000000000000
+000000007098879000000000b0300b000000000000003000bbb0000033300000003bb300b0000b00000000000000000000000000000000000000000000000000
+000000000978890700000000bb00bb0000bbbb0000030000333000003330000000333300b0330b00000000000000000000000000000000000000000000000000
+0000000070979790000000000bbbb000b0bbbb0bb000300b3330000033300000b00bb00bb0000b00b000000b0000000000000000000000000000000000000000
+00000000090909000000000000000000b000000bb000000b0000000000000000b000000b0bbbb000b000000b0000000000000000000000000000000000000000
+00000000007070000000000000000000bbb00bbbbbb00bbb0000000000000000bbb00bbb00000000bbb00bbb0000000000000000000000000000000000000000
+__label__
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000555555555000055555555555555555555000555555555555555555555555555555555000000000000000000000000000000
+00000000000000000000000000000575757775000557755775577577757775555577757775777577757575757577757775000000000000000000000000000000
+00000000000000000000000000000575755755555575557555757575757555575575757575757575557575757575757575000000000000000000000000000000
+00000600000000000000000000000577755755777577757505757577557750555575757575757577757775777575757575000000000000000000000000000000
+00000600000007000000000000000575755755555555757555757575757555575575757575757555755575557575757575000000000000000000000000000000
+00000000000007000000000000000575757775000577555775775575757775555577757775777577750575057577757775000000000000000000000000000000
+00000000000000000000000000000555555555000555505555555555555555000555555555555555550555055555555555000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000d000000000000000000000000000006000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000d000000000000000000000006000006000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000d000000000000000000000006000006000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000006000006000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000d000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000d000000000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000d000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000007000000000000
+00000000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000007000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000006000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000006000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000
+00000000000000000000000600000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000
+00000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000600000000000000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000
+000000000000000d0000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000
+000000000000000d0000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+06000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+06000000000000000d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+06000000000000000d0d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0600000000000000000d000000000000000000003333333333333333333333303333333333333333333333300000000000000000000000000000000000000000
+0600000000000000000d000000000000000000033113111311133113111311333113111311331113111331300000000000000000000000000000000000000000
+00000000000000000000000007000000000000031333131313131333133313131313313313131333131331300000000000000000000000000000000000000000
+00000000000000000000000007000000000000031113111311131303113313131313313313131133113331300006000000000000000000000000000000000000
+00000000000000000000000007000000000000033313133313131333133313131313313313131333131333300006000000000000000000000000000000000000
+00000000000000000000000000000000000000031133130313133113111313131133111311131113131331300000000000000000000000000000000000000000
+00000000000000000000000000000000000000033333330333333333333333333333333333333333333333300000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000007000000000000000000
+0000000600000000000000000000000000000000000000000000000000000000060000070000000000000000000000000000000000000700000000000d000000
+0000000600000000000000000555555555555555555555000055555550555555555550070555555555000055555555555555555555000000000000000d000000
+0000000600000000000000000577757775777557755775000557777755575577755755000577755775000557757775777577757775000000000000000d0d0000
+0000000000000000000000000575757575755575557555000577555775755555755575000557557575000575555755757575755755000000000000000d0d0000
+000000000000000000000000057775775577557775777500057757577575055755057500005755757500057775575577757755575600000000000000000d0000
+00000000000000000000000005755575757555557555750005775557757555755555750000575575750005557557557575757557560000000000000000000000
+00000000000000000000000005750575757775775577550005577777555755777557550000575577550005775557557575757557560000000000000000000000
+00000000000000000000000005550555555555555555500000555555505555555555500000555555500005555055555555555555500000000000000000000000
+00000000000000000000000000000700000000000000070000000000000600000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000700000000000000070000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000700000000000000070000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000700000000000000070000000000000000000000000000000000000000000000060000000000000000000000000000000007
+00000000000000000000000000000700000000000000070000000000000000000006000000000000000000000000060000000000000000000000000000000007
+00000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000060000000000000000000000000000000007
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000070d000000000000000000000000000000000000000d0000000000000000000000000000000000000000000000000000000600000000000000000000
+0000000070d000000000000000000000000000000000000000d0000000000000000000000000000000000000000000d000000000006000000000000000000000
+000000000d000000000000000000000000000000000000000d0000000000000000000000000000000000000000000d0000000000060000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000d00000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000008008000000000000000000000000000000d00000000000000000000000000000000
+77777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777777
+0000000000000000000000000000000000000000000000000000000000008cc80000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000060000000000000000000000000000000088c788000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000006000000000000000000000000000000002211220000000000000000000000000000000000000000000000000000000000000000
+000000000000000000000000000600000000000d0000000000000000000000cc0000000000000000060000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000d000000000000000000000077000000000000000006000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000d000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000
+00666666666677777777777770000000000000d00000000000777777777700000000000007777777666666666666666666777777777777000006666666660000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000666666666666666600000000000000666666666666666666777770000000000000000000000077777777777666677777777777777777777000000666666
+00000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000000000000000000000000d000600000000000000000000000000000000000000
+000000000000000000000000000000000000000000000000000000000000000000000000000000000000d0006000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000070000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000d000000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000d000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000007000000000000000000000000000000000000000000000000000000000000000000070000000000000000
+00000000000000000000060000000000000000000000000000000d00000000000000000000000000000000000000000000000000000000070000000000000000
+00000000000000000000060000000000000000000000000000000d00000000000000000000000000000000000000000000000600000000000000000600000000
+00000000000000000000060000000000000000000000000000000d00000000000000000000000000000000000000000000000600000000000000000600000000
+00070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000
+00070000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600
+0007000bbbbbbbbbbbbbbbbb0000bbbbbbb0bbbbbbb0bbbbbbb0bbbbbbb0000bbbbbbbbbbbbbbbbb0000bbbbbbb0000bbbbbbbbbbbbbbbbb0000bbbbbbb00600
+0000000b333bb33b3b3b333bbbbbb33333bbb33333bbb33333bbb33333bb000b333bb33b333b333bbbbbb33333bb000b333b333b333b333bbbbbb33333bb0600
+0000000b333b3b3b3b3b3bbbb3bb333bb33b333b333b33bbb33b33bb333b000b3b3b3b3b333b3b3bb3bb33bbb33b000b3bbbb3bb3b3b3bbbb3bb33b3b33b0600
+0000000b3b3b3b3b3b3b33b0bbbb33bbb33b33bbb33b33bbb33b33bbb33b000b33bb3b3b3b3b33bbbbbb33b3b33b000b33b0b3bb33bb33b0bbbb333b333b0000
+0000000b3b3b3b3b333b3bbbb3bb333bb33b33bbb33b333b333b33bb333b000b3b3b3b3b3b3b3b3bb3bb33bbb33b000b3bbbb3bb3b3b3bbbb3bb33b3b33b0000
+0000000b3b3b33bbb3bb333bbbbbb33333bbb33333bbb33333bbb33333bb000b333b33bb3b3b333bbbbbb33333bb000b3b0b333b3b3b333bbbbbb33333bb0000
+0000000bbbbbbbb0bbbbbbbb0000bbbbbbbdbbbbbbb0bbbbbbb0bbbbbbb0000bbbbbbbbbbbbbbbbb0000bbbbbbb0000bbb0bbbbbbbbbbbbb0000bbbbbbb00000
+00000000000000000000000000000007000d00000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000
+
+__sfx__
+011000201c0101e01021010000001c7101e710217101d0001c0101e010230101f0001c7101e710237101c0001c0101f01023010000001c7101f71023710000001a0101d01021010000001a7101d7102171000000
+010400000f6400f6000f6400060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
+01040000343232e303343233330330303063030030300303003030030300303003030030300303003030030300303003030030300303003030030300303003030030300303003030030300303003030030300303
+011000003205600003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300000
+011000001065110651106511065110651106511065110651000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001000010000100001
+011000001c7511c7511c7511c75100700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700
+010c00000c4640f6640f6640060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300603006030060300600
+011000001864310651006010060100601006010060100601006010060100601006010060100601006010060100601006010060100601006010060100601006010060100601006010060100601006010060100601
+010400003005330053300530000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003
+010800001805000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010800001a05000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010800001c05000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010800001d05000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010800001f05000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+010800001d05000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+011000200c0630000000000000000c6350c04300000000000c0630c04300000000000c6450c00300000000000c0630000000000000000c6350c04300000000000c0630000000000000000c6360c6260c6160c043
+011000200200502005020150214502025021150204502125020150214502025021150204502115020450211502045021250201502145020250211502045021250201502145020250211502045021150204502115
+__music__
+03 000f1044
+
