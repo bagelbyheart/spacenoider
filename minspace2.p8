@@ -41,6 +41,16 @@ function _tcpy(tbl)
  return o
 end
 
+function _tmrg(src,fin)
+ local s=src
+ local f=fin
+ local o=_tcpy(src)
+ for k,v in pairs(fin) do
+  o[k]=v
+ end
+ return o
+end
+
 function _null()
 end
 
@@ -701,9 +711,10 @@ function shipent(x,y)
    return self.f%(90+(flr(rnd(60))-30))
   end
  }
- for k,v in pairs(s) do
-  e[k]=v
- end
+ e=_tmrg(e,s)
+-- for k,v in pairs(s) do
+--  e[k]=v
+-- end
  return e
 end
 
