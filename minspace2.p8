@@ -11,6 +11,20 @@ function check(tbl)
  end
 end
 
+function _tmrg(src,mod)
+-- takes a source and mod table
+-- and returns a combination of
+-- the two with any duplicate
+-- values favoring mod.
+ local s=src
+ local m=mod
+ local o=_tcpy(src)
+ for k,v in pairs(mod) do
+  o[k]=v
+ end
+ return o
+end
+
 function _pprint(str,xoff,yoff,
                  col1,col2)
  local col1=col1 or 7
@@ -36,16 +50,6 @@ function _tcpy(tbl)
  local t=tbl
  local o={}
  for k,v in pairs(t) do
-  o[k]=v
- end
- return o
-end
-
-function _tmrg(src,fin)
- local s=src
- local f=fin
- local o=_tcpy(src)
- for k,v in pairs(fin) do
   o[k]=v
  end
  return o
@@ -712,9 +716,6 @@ function shipent(x,y)
   end
  }
  e=_tmrg(e,s)
--- for k,v in pairs(s) do
---  e[k]=v
--- end
  return e
 end
 
@@ -745,9 +746,7 @@ function playent(x,y)
    end
   end
  }
- for k,v in pairs(p) do
-  e[k]=v
- end
+ e=_tmrg(e,p)
  return e
 end
 
@@ -761,9 +760,7 @@ function foeent(x,y)
    return null end,
   fpattern=firerand
  }
- for k,v in pairs(f) do
-  e[k]=v
- end
+e=_tmrg(e,f)
  return e
 end
 
@@ -774,21 +771,15 @@ function bullent(x,y)
   faction=2,
   onhit=bullhit
  }
- for k,v in pairs(f) do
-  e[k]=v
- end
+e=_tmrg(e,f)
  return e
 end
 
 function bmake(en,x,y,more)
  local e=_tcpy(bullent(x,y))
- for k,v in pairs(en) do
-  e[k]=v
- end
+ e=_tmrg(e,en)
  if more then
-  for k,v in pairs(more) do
-   e[k]=v
-  end
+  e=_tmrg(e,more)
  end
  e:ebhv()
  if limitmake(e) then
@@ -799,13 +790,9 @@ end
 
 function emake(en,x,y,more)
  local e=_tcpy(foeent(x,y))
- for k,v in pairs(en) do
-  e[k]=v
- end
+ e=_tmrg(e,en)
  if more then
-  for k,v in pairs(more) do
-   e[k]=v
-  end
+  e=_tmrg(e,more)
  end
  e:ebhv()
  if limitmake(e) then
@@ -817,9 +804,7 @@ end
 function pmake(x,y,more)
  local e=_tcpy(playent(x,y))
  if more then
-  for k,v in pairs(more) do
-   e[k]=v
-  end
+  e=_tmrg(e,more)
  end
  add(entities,e)
 end
@@ -1099,9 +1084,7 @@ function boom(x,y)
         self.f/2,self.f%4+c)
   end
  }
- for k,v in pairs(n) do
-  e[k]=v
- end
+ e=_tmrg(e,n)
  add(entities,e)
 end
 
@@ -1152,9 +1135,7 @@ function bomb()
     end
    end
   }
-  for k,v in pairs(b) do
-   e[k]=v
-  end
+  e=_tmrg(e,b)
   add(entities,e)
  end
 end
@@ -1218,9 +1199,7 @@ end
 function life(x,y)
  local t=gendrop
  local d={}
- for k,v in pairs(t) do
-  d[k]=v
- end
+ d=_tmrg(d,t)
  d.x=x or 60
  d.y=y or 60
  d.sy=drnd()
@@ -1242,9 +1221,7 @@ end
 function lasr(x,y)
  local t=gendrop
  local d={}
- for k,v in pairs(t) do
-  d[k]=v
- end
+ d=_tmrg(d,t)
  d.x=x or 60
  d.y=y or 60
  d.sy=drnd()
@@ -1269,9 +1246,7 @@ end
 function misl(x,y)
  local t=gendrop
  local d={}
- for k,v in pairs(t) do
-  d[k]=v
- end
+ d=_tmrg(d,t)
  d.x=x or 60
  d.y=y or 60
  d.sy=drnd()
@@ -1296,9 +1271,7 @@ end
 function blam(x,y)
  local t=gendrop
  local d={}
- for k,v in pairs(t) do
-  d[k]=v
- end
+ d=_tmrg(d,t)
  d.x=x or 60
  d.y=y or 60
  d.sy=drnd()
