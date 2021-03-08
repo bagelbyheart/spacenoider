@@ -211,6 +211,7 @@ function _init()
 -- create the player object
  bullettypes()
  enemytypes()
+ drops()
  entities=entities or {}
  pmake(60,90)
  tl={x=0,y=0}
@@ -318,12 +319,9 @@ function _gint()
 -- value
  wave=0
  elitecut=90
--- emake(driller,64,-300,
---       {mov=_null,
---        ondead=_null,
---        n="targ"})
  for i=1,#dtypes do
-  dtypes[i](i*16,60)
+--  dtypes[i](i*16,60)
+  dmake(dtypes[i],i*16,60)
  end
 end
 
@@ -343,7 +341,8 @@ function _gupd()
   if e.l==4 then
   if e.chp<=0 then
    if rnd(100)>80 then
-    rnd(dtypes)(e.x,e.y)
+--    rnd(dtypes)(e.x,e.y)
+    dmake(rnd(dtypes),e.x,e.y)
    end
   end
   end
@@ -653,11 +652,12 @@ function genent(x,y)
   make=emake,
   ebhv=_null,
   fpattern=_null,
-  onhit=_null,
+  onhit=function(self) sfx(self.hsfx) end,
   ondead=simpledeath,
   mov=_bouncedown,
   upd=function(self)
-   if self.chp<=0 then
+   if self.chp and
+      self.chp<=0 then
     self:ondead()
    else
     if self.f%self.aspd==0 then
@@ -911,6 +911,31 @@ end
  end
 end
 
+function _bounceround(self)
+ if self.xd==0 and
+    self.yd==0 then
+  self.xd=drnd()
+  self.yd=drnd()
+ end
+ if self.f>=150 then
+  del(entities,self)
+ end
+ local ly=16 uy=100
+ if self.y > uy or
+    self.y < ly then
+  self.yd=-self.yd
+ end
+ local lx=16 ux=112
+ if self.x > ux or
+    self.x < lx then
+  self.xd=-self.xd
+ end
+ self.x=mid(self.x,lx,ux)
+ self.y=mid(self.y,ly,uy)
+ self.x+=self.xd
+ self.y+=self.yd
+end
+
 function _sideside(self)
  if self.xd==0 then
   self.xd=.5
@@ -1145,150 +1170,103 @@ function drnd()
  return rnd({-1,1})
 end
 
-gendrop=genent(60,60)
-gendrop.l=2
-gendrop.sx=1
-gendrop.sy=1
-gendrop.w=4
-gendrop.h=4
-gendrop.spd=2
-gendrop.faction=1
-gendrop.act=function(self)
- sfx(self.hsfx)
-end
-gendrop.upd=function(self)
- if _ovrlp(p,self) then
-  boom(self.x,self.y)
-  score.add(self.val)
-  self:act()
-  del(entities,self)
- end
- if self.f>=150 then
-  del(entities,self)
- end
- if self.f%15==0 then
-  _rot(self.spr) end
- self.f+=1
- local ly=16 uy=100
- if self.y > uy or
-    self.y < ly then
-  self.sy=-self.sy
- end
- local lx=16 ux=112
- if self.x > ux or
-    self.x < lx then
-  self.sx=-self.sx
- end
- self.x=mid(self.x,lx,ux)
- self.y=mid(self.y,ly,uy)
- self.x+=self.sx
- self.y+=self.sy
-end
-gendrop.dra=function(self)
- if self.f>100 then
-  if self.f%2==0 then
-   _pswap()
-  end
- end
- spr(self.spr[1],self.x,
-     self.y)
- pal()
-end
-
-
-function life(x,y)
- local t=gendrop
- local d={}
- d=_tmrg(d,t)
- d.x=x or 60
- d.y=y or 60
- d.sy=drnd()
- d.sx=drnd()
- sfx(d.fsfx)
- d.hsfx=3
- d.spr={57}
- d.w=4
- d.h=6
- d.val=100
- d.act=function(self)
+function drops()
+life={
+ hsfx=3,
+ spr={57},
+ w=4,
+ h=6,
+ val=100,
+ onhit=function(self)
   sfx(self.hsfx)
   p.chp+=2
   mid(0,p.chp,p.mh)
+  del(entities,self)
  end
- add(entities,d)
-end
+}
 
-function lasr(x,y)
- local t=gendrop
- local d={}
- d=_tmrg(d,t)
- d.x=x or 60
- d.y=y or 60
- d.sy=drnd()
- d.sx=drnd()
- sfx(d.fsfx)
- d.spr={53}
- d.w=8
- d.h=8
- d.val=1000
- d.hsfx=2
- d.act=function(self)
+lasr={
+ spr={53},
+ w=8,
+ h=8,
+ val=1000,
+ hsfx=2,
+ onhit=function(self)
   sfx(self.hsfx)
   local have=0
   for i=1,#p.guns do
    if (p.guns[i]==laser) p.guns[i].t=0 have=1
   end
   if (have!=1) add(p.guns,laser)
+  del(entities,self)
  end
- add(entities,d)
-end
+}
 
-function misl(x,y)
- local t=gendrop
- local d={}
- d=_tmrg(d,t)
- d.x=x or 60
- d.y=y or 60
- d.sy=drnd()
- d.sx=drnd()
- sfx(d.fsfx)
- d.spr={56}
- d.w=8
- d.h=8
- d.val=1000
- d.hsfx=2
- d.act=function(self)
+misl={
+ spr={56},
+ w=8,
+ h=8,
+ val=1000,
+ hsfx=2,
+ onhit=function(self)
   sfx(self.hsfx)
   local have=0
   for i=1,#p.guns do
    if (p.guns[i]==missile) p.guns[i].t=0 have=1
   end
   if (have!=1) add(p.guns,missile)
+  del(entities,self)
  end
- add(entities,d)
-end
+}
 
-function blam(x,y)
- local t=gendrop
- local d={}
- d=_tmrg(d,t)
- d.x=x or 60
- d.y=y or 60
- d.sy=drnd()
- d.sx=drnd()
- sfx(d.fsfx)
- d.spr={51}
- d.w=8
- d.h=8
- d.val=1000
- d.hsfx=2
- d.act=function(self)
+blam={
+ spr={51},
+ w=8,
+ h=8,
+ val=1000,
+ hsfx=2,
+ onhit=function(self)
   sfx(self.hsfx)
   bomb()
+  del(entities,self)
   --if (p.cbomb<p.mbomb) p.cbomb+=1
  end
- add(entities,d)
+}
 end
+
+function dropent(x,y)
+ local e=genent(x,y)
+ local d={
+  l=2,
+  faction=2,
+  mov=_bounceround,
+  dra=function(self)
+   if self.f>100 then
+    if self.f%2==0 then
+     _pswap()
+    end
+   end
+   spr(self.spr[1],self.x,
+       self.y)
+   pal()
+  end
+ }
+e=_tmrg(e,d)
+ return e
+end
+
+function dmake(en,x,y,more)
+ local e=dropent(x,y)
+ e=_tmrg(e,en)
+ if more then
+  e=_tmrg(e,more)
+ end
+ if limitmake(e) then
+  add(entities,e)
+  sfx(e.fsfx)
+ end
+end
+
 __gfx__
 0000000008008000080080000800800099000000aa00000099000000c00000007000000008900000097000000000000000000000000000000000000000000000
 0000000008668000086680000866800099000000aa00000099000000c00000007000000058850000599500000000000000000000000000000000000000000000
