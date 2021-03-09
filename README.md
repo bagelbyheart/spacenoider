@@ -10,9 +10,7 @@ Right now I'm in the process of refactoring Spacenoider so it can be expanded in
 
 The following are big things that need to be addressed in a rough order of ease.
 
-1. Make the `_circles` function atomic.  
-  * currently circles just wins over all other movement types.
-2. Do another pass checking for major redundancy.
+1. Do another pass checking for major redundancy.
 
 ### Ugh Items
 

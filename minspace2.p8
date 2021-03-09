@@ -5,31 +5,6 @@ __lua__
 --by bagelbyheart
 
 -- > tools
-
-function pcirc(x,y,r,points,ps,c,rt,l)
- sh=360/points
- nh=0
- sa=sh/360
- na=0
- c=c or 7
- rt=rt or 0
- rt=rt/360
- for i=1,points do
-  yo=y-(r*cos(na+rt))
-  xo=x+(r*sin(na+rt))
-  na+=sa
-  nh+=sh
-  if p then
-   print(i,xo+4,yo-4,c)
-   end
-  
-  if l then
-   line(x,y,xo,yo,c)
-   end
-  circfill(xo,yo,ps-1,0)
-  circ(xo,yo,ps,c)
-  end
- end
  
 function check(tbl)
  for k,v in pairs(tbl) do
@@ -949,23 +924,19 @@ function _sideside(self)
 end
 
 function _circles(self)
- if self.mx==0 then
-  self.mx=self.x
-  self.my=self.y
- end
-   local lx=10 ux=118
-   if self.x > ux then
-    self.x=ux-(self.x-ux)
-   end
-   if self.x < lx then
-    self.x=lx+(lx-self.x)
-   end
-   self.x=self.r*
-          sin(self.f/50)+
-          self.mx
-   self.y=self.r*
-          cos(self.f/50)+
-          self.my
+ local r=6
+ local rspd=30/(self.spd/2)
+ local ags=(360/rspd)/360
+ local cf=f%rspd
+ local lf=(f-1)%rspd
+ ox=r*sin(ags*lf)
+ oy=r*cos(ags*lf)
+ nx=r*sin(ags*cf)
+ ny=r*cos(ags*cf)
+ xd=nx-ox
+ yd=ny-oy
+ self.x+=xd
+ self.y+=yd 
 end
 
 function playmov(self)
