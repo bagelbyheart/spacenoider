@@ -5,6 +5,32 @@ __lua__
 --by bagelbyheart
 
 -- > tools
+
+function pcirc(x,y,r,points,ps,c,rt,l)
+ sh=360/points
+ nh=0
+ sa=sh/360
+ na=0
+ c=c or 7
+ rt=rt or 0
+ rt=rt/360
+ for i=1,points do
+  yo=y-(r*cos(na+rt))
+  xo=x+(r*sin(na+rt))
+  na+=sa
+  nh+=sh
+  if p then
+   print(i,xo+4,yo-4,c)
+   end
+  
+  if l then
+   line(x,y,xo,yo,c)
+   end
+  circfill(xo,yo,ps-1,0)
+  circ(xo,yo,ps,c)
+  end
+ end
+ 
 function check(tbl)
  for k,v in pairs(tbl) do
   print(k.." "..type(v))
