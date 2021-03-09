@@ -10,10 +10,9 @@ Right now I'm in the process of refactoring Spacenoider so it can be expanded in
 
 The following are big things that need to be addressed in a rough order of ease.
 
-1. Revamp spawn functions to be more precise. Currently just `_sline` and `dline`.
-2. Make movement accept tables of movement types.  
-  * I sort of got this done, now I need to make the movement functions more atomic. At the moment, circle just seems to win over all others, but side to side is fixed!
-  * Ugh, still having trouble figuring out how to break out circles. probably need to do them in a dumber way.
+1. Make the `_circles` function atomic.  
+  * currently circles just wins over all other movement types.
+2. Do another pass checking for major redundancy.
 
 ### Ugh Items
 
@@ -26,13 +25,10 @@ These are things that I would like to do, but seem overwhelming at the moment.
 The stuff past this is what I want to do after finishing the refactor.
 
 1. Add power-ups for each weapon.
-2. Have weapons and power-ups change player appearance.
+2. Have weapons and power-ups change player appearance.  
+  * This should be pretty easy since drops can do things like alter the player sprite table, although failing back that way might be harder...
 3. Model enemies off how they modify the player.  
   * _I'm not sure what I meant by this..._
+  * Maybe, make the missile enemy look similar to how the missile power up makes the player look? Seems possible.
 
 
-```lua
-for f=1,30 do
- print(flr(f/10%2))
-end
-```

@@ -326,6 +326,7 @@ function _gint()
  emake(bomber,60,0)
  emake(driller,60,0)
  emake(gunner,60,30)
+ _dline(8,driller,10,10,"r")
 end
 
 function _gupd()
@@ -488,13 +489,13 @@ function waves()
    local rand=rnd(1)
 -- 15% to spawn bombers.
    if rand>=.85 then
-    _sline(bomber,4)
+    _sline(4,bomber,10,10)
 -- 35% to spawn gunners.
    elseif rand>.5 then
-    _sline(gunner,4)
+    _sline(4,gunner,10,10,'r')
 -- 50% to spawn drillers.
    else
-    _dline(driller,8)
+    _dline(8,driller,10,10)
    end
   end
 end
@@ -805,9 +806,13 @@ function emake(en,x,y,more)
   e=_tmrg(e,more)
  end
  e:ebhv()
- if limitmake(e) then
-  add(entities,e)
-  sfx(e.fsfx)
+ if e.test then
+  return e
+ else
+  if limitmake(e) then
+   add(entities,e)
+   sfx(e.fsfx)
+  end
  end
 end
 
@@ -833,42 +838,36 @@ function limitmake(ent)
  end
 end
 
-function _sline(e,n,more)
+function _sline(n,en,x,y,side,more)
 -- e = an entity function.
 -- n = number of e to spawn.
- local ydir=ydir or 0
--- randomize y and x offset.
- local yoff=rnd({0,10})
- if (ydir==1) then
-  yoff=-yoff end
- local xoff=rnd({-7,50})
--- randomize frame offset so
--- enemies don't shoot at the
--- the same time.
- local foff=rnd({0,5,10})
--- this lets you spawn single
--- enemies if you call with no
--- arg
- local n=n or 1
--- currently enemies are placed
--- via dead reckoning but this
--- will become more manual.
+ fullent=emake(en,x,y,{test=0})
+ local xoff=fullent.w*1.5
+ if side and side=="r" then
+  xoff=-xoff
+  x=128-x
+ end
  for i=1,n do
-  local x=i*16+xoff
-  local y=10+yoff
-  emake(e,x,y,more)
+  local ox=x+i*xoff
+  local oy=y
+  emake(en,ox,oy,more)
  end
 end
 
-function _dline(e,n,more)
- local yoff=rnd({-10,10})
- local xoff=8
- local foff=rnd({0,5,10})
- local n=n or 1
+function _dline(n,en,x,y,side,more)
+ fullent=emake(en,x,y,{test=0})
+ local xoff=fullent.w*1.5
+ local yoff=-fullent.h*1.5
+ if side then
+  if side=="r" then
+   xoff=-xoff
+   x=128-x
+  end
+ end
  for i=1,n do
-  local x=i*12+xoff
-  local y=i*yoff
-  emake(e,x,y,more)
+  local ox=x+i*xoff
+  local oy=y+i*yoff
+  emake(en,ox,oy,more)
  end
 end
 
