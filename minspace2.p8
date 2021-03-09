@@ -252,11 +252,8 @@ function _init()
  score=_score()
 -- load all our types.
 -- (could probably be a wrapper)
- bullettypes()
- enemytypes()
- drops()
--- first entities or {}
- entities=entities or {}
+ entitytypes()
+ dtypes={life,blam,lasr,misl}
 -- make the player entity
  emake(player,60,90)
  tl={x=0,y=0}
@@ -354,29 +351,8 @@ function _gint()
  _dra=_gdra
  score.init()
  p:rst()
--- set types of drops.
--- (move into drops function)
- dtypes={life,lasr,misl,blam}
--- test example of drop spawns
- for i=1,#dtypes do
-  emake(dtypes[i],i*16,60)
- end
--- test examples of complicated
--- enemy spawn types.
- emake(bomber,60,0)
- emake(driller,60,0,
-       {
-        fpattern=function(self)
-         local s=self
-         if s.f==30 then
-          s.mov=_circles
-         elseif s.f==180 then
-          s.mov=_falldown
-         end
-        end
-       })
- emake(gunner,60,30)
- _dline(8,driller,10,10,"r")
+-- demodrops()
+-- demoenemies()
 end
 
 function _gupd()
@@ -408,18 +384,6 @@ function _gupd()
   if (btnp(❎)) _mrot()
  else
   waves()
--- this needs to move into the
--- generic update function just
--- before ondead()
- for e in all(entities) do
-  if e.l==4 then
-  if e.chp<=0 then
-   if rnd(100)>80 then
-    emake(rnd(dtypes),e.x,e.y)
-   end
-  end
-  end
- end
 -- simple bounding based on
 -- dead reckoning top left and
 -- bottom right for bullets.
@@ -570,139 +534,6 @@ end
 
 -->8
 -- > entity functions
-
--- enemy declarations.
--- this could use a generic ala
--- gengun (page 6).
-function enemytypes()
-
-gunner={
- temp=foeent,
- n="gunner",
- spr={33,34,35},
- chp=4,
- aspd=10,
- val=400,
- spd=.5,
- gun=vulcan,
- mov=_sideside,
- dra=function(self)
-  _pswap()
-  spr(self.spr[1],self.x,
-      self.y)
-  pal()
-  print(self.xd,
-        self.x+4,self.y-4,10)
- end
-}
-
-bomber={
- temp=foeent,
- n="bomber",
- spr={33,34,35},
- val=1000,
- aspd=10,
- r=5,
- gun=missile,
- mov={_circles,_falldown},
- ebhv=function(self)
-  local e=self
-  if e.elite then
-   e.val=e.val*4
-  end
- end
-}
-
-driller={
- temp=foeent,
- n="driller",
- spr={17,18,19,20,21,22},
- ebhv=function(self)
-  local e=self
-  if e.elite then
-   e.yd=e.spd*2 e.chp=e.chp*2
-   e.val=e.val*4
-  end
- end
-}
-
-player={
- temp=playent,
- n="player"
-}
-end
-
-function bullettypes()
-
- vulcan={
-  temp=bullent,
-  i={52},
-  n="vulcan",
-  spr={4,5,6},
-  val=0,
-  aspd=5,
-  spd=2,
-  dam=2, lim=8,
-  fsfx=9, hsfx=11,
-  onhit=bullhit,
-  make=emake
- }
- 
- laser={
-  temp=bullent,
-  n="laser", --name
-  i={53},    --icon
-  spr={7,8},
-  w=1, h=7,
-  spd=4,
-  chp=30,
-  fsfx=2, hsfx=5,
-  dam=1,
-  lim=4,
-  onhit=function(self,e)
-   e.chp-=self.dam
-   sfx(self.hsfx)
-   boom(self.x,self.y)
-  end,
-  make=emake
- }
- 
- missile={
-  temp=bullent,
-  n="homing", --name
-  i={56},     --icon
-  t=0,
-  spr={9,10},
-  w=4, h=4,
-  spd=4,
-  fsfx=9, hsfx=11,
-  dam=6,
-  lim=4,
-  make=emake,
-  mov=function(self)
-   local enemies={}
-   for e in all(entities) do
-    if e.l==1 or e.l==4 then
-    if e.faction!=self.faction then
-     add(enemies,e)
-    end
-    end
-   end
-   local t=_nearest(self,
-                    enemies)
-   _hseek(self,t)
-  end
- }
-
- ngun={
-  n="null",
-  i={0},
-  make=function(self)
-   return null
-  end
- }
-end
-
 function genent(x,y)
  local e={
   f=0,
@@ -727,6 +558,7 @@ function genent(x,y)
   val=100, --unused by player curr
   make=emake,
   ebhv=_null,
+  drops=rnddrop,
   fpattern=_null,
   onhit=function(self) sfx(self.hsfx) end,
   ondead=simpledeath,
@@ -734,6 +566,7 @@ function genent(x,y)
   upd=function(self)
    if self.chp and
       self.chp<=0 then
+	self:drops()
     self:ondead()
    else
     if self.f%self.aspd==0 then
@@ -773,8 +606,6 @@ function genent(x,y)
    if (self.chp>0) then
     spr(self.spr[1],
         self.x,self.y)
-    print(self.xd,
-          self.x+4,self.y-4,10)
     pal()
    end
 
@@ -810,20 +641,22 @@ function playent(x,y)
   faction=1,
   chp=16,
   mhp=16,
+  lim=1,
   guns={vulcan},
   onhit=playhit,
-  ondead=hidedead,
+  ondead=simpledeath,
   fpattern=playfir,
   mov=playmov,
   rst=function(self)
    self.chp=8
-   self.x,self.y=x,y
+   self.x,self.y=60,90
 -- delete all non player ents.
    for e in all(entities) do
-    if e.faction!=1 then
+    --if e.faction!=1 then
      del(entities,e)
-    end
+    --end
    end
+   add(entities,self)
   end
  }
  e=_tmrg(e,p)
@@ -855,6 +688,27 @@ e=_tmrg(e,f)
  return e
 end
 
+function dropent(x,y)
+ local e=genent(x,y)
+ local d={
+  l=2,
+  faction=2,
+  mov=_bounceround,
+  dra=function(self)
+   if self.f>100 then
+    if self.f%2==0 then
+     _pswap()
+    end
+   end
+   spr(self.spr[1],self.x,
+       self.y)
+   pal()
+  end
+ }
+e=_tmrg(e,d)
+ return e
+end
+
 function emake(en,x,y,more)
  local e=_tcpy(en.temp(x,y))
  e=_tmrg(e,en)
@@ -873,7 +727,216 @@ function emake(en,x,y,more)
 end
 
 -->8
+-- > entity types
+function entitytypes()
+ bullettypes()
+ enemytypes()
+ droptypes()
+ entities=entities or {}
+end
+
+function demodrops()
+-- test example of drop spawns
+ for i=1,#dtypes do
+  emake(dtypes[i],i*16,60)
+ end
+end
+
+function enemytypes()
+ gunner={
+  temp=foeent,
+  n="gunner",
+  spr={33,34,35},
+  chp=4,
+  aspd=10,
+  val=400,
+  spd=.5,
+  gun=vulcan,
+  mov=_sideside,
+  dra=function(self)
+   _pswap()
+   spr(self.spr[1],self.x,
+       self.y)
+   pal()
+   print(self.xd,
+         self.x+4,self.y-4,10)
+  end
+ }
+ bomber={
+  temp=foeent,
+  n="bomber",
+  spr={33,34,35},
+  val=1000,
+  aspd=10,
+  r=5,
+  gun=missile,
+  mov={_circles,_falldown},
+  ebhv=function(self)
+   local e=self
+   if e.elite then
+    e.val=e.val*4
+   end
+  end
+ }
+ driller={
+  temp=foeent,
+  n="driller",
+  spr={17,18,19,20,21,22},
+  ebhv=function(self)
+   local e=self
+   if e.elite then
+    e.yd=e.spd*2 e.chp=e.chp*2
+    e.val=e.val*4
+   end
+  end
+ }
+ player={
+  temp=playent,
+  n="player"
+ }
+end
+
+function bullettypes()
+ vulcan={
+  temp=bullent,
+  i={52},
+  n="vulcan",
+  spr={4,5,6},
+  val=0,
+  aspd=5,
+  spd=2,
+  dam=2, lim=8,
+  fsfx=9, hsfx=11,
+  onhit=bullhit,
+  make=emake
+ }
+ laser={
+  temp=bullent,
+  n="laser", --name
+  i={53},    --icon
+  spr={7,8},
+  w=1, h=7,
+  spd=4,
+  chp=30,
+  fsfx=2, hsfx=5,
+  dam=1,
+  lim=4,
+  onhit=function(self,e)
+   e.chp-=self.dam
+   sfx(self.hsfx)
+   boom(self.x,self.y)
+  end,
+  make=emake
+ }
+ missile={
+  temp=bullent,
+  n="homing", --name
+  i={56},     --icon
+  t=0,
+  spr={9,10},
+  w=4, h=4,
+  spd=4,
+  fsfx=9, hsfx=11,
+  dam=6,
+  lim=4,
+  make=emake,
+  mov=_heatseek
+ }
+ ngun={
+  n="null",
+  i={0},
+  make=function(self)
+   return null
+  end
+ }
+end
+
+function droptypes()
+ dtypes={life,lasr,misl,blam}
+ life={
+  temp=dropent,
+  hsfx=3,
+  spr={57},
+  w=4,
+  h=6,
+  val=100,
+  onhit=function(self)
+   sfx(self.hsfx)
+   p.chp+=2
+   mid(0,p.chp,p.mh)
+   del(entities,self)
+  end
+ }
+ lasr={
+  temp=dropent,
+  spr={53},
+  w=8,
+  h=8,
+  val=1000,
+  hsfx=2,
+  onhit=function(self)
+   sfx(self.hsfx)
+   local have=0
+   for i=1,#p.guns do
+    if (p.guns[i]==laser) p.guns[i].t=0 have=1
+   end
+   if (have!=1) add(p.guns,laser)
+   del(entities,self)
+  end
+ }
+ misl={
+  temp=dropent,
+  spr={56},
+  w=8,
+  h=8,
+  val=1000,
+  hsfx=2,
+  onhit=function(self)
+   sfx(self.hsfx)
+   local have=0
+   for i=1,#p.guns do
+    if (p.guns[i]==missile) p.guns[i].t=0 have=1
+   end
+   if (have!=1) add(p.guns,missile)
+   del(entities,self)
+  end
+ }
+ blam={
+  temp=dropent,
+  spr={51},
+  w=8,
+  h=8,
+  val=1000,
+  hsfx=2,
+  onhit=function(self)
+   sfx(self.hsfx)
+   bomb()
+   del(entities,self)
+   --if (p.cbomb<p.mbomb) p.cbomb+=1
+  end
+ }
+end
+
+-->8
 -- > control functions
+
+function demoenemies()
+ emake(bomber,60,0)
+ emake(driller,60,0,
+       {
+        fpattern=function(self)
+         local s=self
+         if s.f==30 then
+          s.mov=_circles
+         elseif s.f==180 then
+          s.mov=_falldown
+         end
+        end
+       })
+ emake(gunner,60,30)
+ _dline(8,driller,10,10,"r")
+end
+
 -- > spawn functions
 function limitmake(ent)
  if ent.lim then
@@ -928,6 +991,9 @@ function _dline(n,en,x,y,side,more)
 end
 
 -- > movement functions
+function drnd()
+ return rnd({-1,1})
+end
 
 function _falldown(self)
  self.yd=self.spd
@@ -992,6 +1058,20 @@ function _circles(self)
  yd=ny-oy
  self.x+=xd
  self.y+=yd 
+end
+
+function _heatseek(self)
+ local enemies={}
+ for e in all(entities) do
+  if e.l==1 or e.l==4 then
+   if e.faction!=self.faction then
+    add(enemies,e)
+   end
+  end
+ end
+ local t=_nearest(self,
+                  enemies)
+ _hseek(self,t)
 end
 
 function playmov(self)
@@ -1062,6 +1142,14 @@ function simpledeath(self)
       self.y+(self.h/2))
  score.add(self.val)
  del(entities,self)
+end
+
+-- > drop functions
+function rnddrop(self)
+ if rnd(100)>80 then
+  emake(rnd(dtypes),
+        self.x,self.y)
+ end
 end
 
 -->8
@@ -1148,100 +1236,6 @@ function bomb()
   e=_tmrg(e,b)
   add(entities,e)
  end
-end
-
--- > pickup functions
-function drnd()
- return rnd({-1,1})
-end
-
-function drops()
-life={
- temp=dropent,
- hsfx=3,
- spr={57},
- w=4,
- h=6,
- val=100,
- onhit=function(self)
-  sfx(self.hsfx)
-  p.chp+=2
-  mid(0,p.chp,p.mh)
-  del(entities,self)
- end
-}
-
-lasr={
- temp=dropent,
- spr={53},
- w=8,
- h=8,
- val=1000,
- hsfx=2,
- onhit=function(self)
-  sfx(self.hsfx)
-  local have=0
-  for i=1,#p.guns do
-   if (p.guns[i]==laser) p.guns[i].t=0 have=1
-  end
-  if (have!=1) add(p.guns,laser)
-  del(entities,self)
- end
-}
-
-misl={
- temp=dropent,
- spr={56},
- w=8,
- h=8,
- val=1000,
- hsfx=2,
- onhit=function(self)
-  sfx(self.hsfx)
-  local have=0
-  for i=1,#p.guns do
-   if (p.guns[i]==missile) p.guns[i].t=0 have=1
-  end
-  if (have!=1) add(p.guns,missile)
-  del(entities,self)
- end
-}
-
-blam={
- temp=dropent,
- spr={51},
- w=8,
- h=8,
- val=1000,
- hsfx=2,
- onhit=function(self)
-  sfx(self.hsfx)
-  bomb()
-  del(entities,self)
-  --if (p.cbomb<p.mbomb) p.cbomb+=1
- end
-}
-end
-
-function dropent(x,y)
- local e=genent(x,y)
- local d={
-  l=2,
-  faction=2,
-  mov=_bounceround,
-  dra=function(self)
-   if self.f>100 then
-    if self.f%2==0 then
-     _pswap()
-    end
-   end
-   spr(self.spr[1],self.x,
-       self.y)
-   pal()
-  end
- }
-e=_tmrg(e,d)
- return e
 end
 
 __gfx__
