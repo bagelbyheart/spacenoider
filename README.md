@@ -10,7 +10,13 @@ Right now I'm in the process of refactoring Spacenoider so it can be expanded in
 
 The following are big things that need to be addressed in a rough order of ease.
 
-1. Do another pass checking for major redundancy.
+1. Do another pass checking for major redundancy.  
+  1. Move `_hseek()` from tools to movement types.
+  2. Make `entitytypes()` a wrapper for the existing `ntypes()`
+  3. Remove redundant `entities=entities or {}`
+  4. See about removing the p var and going entirely based on faction. _(might already be there honestly)_
+  5. Move drop chance from game loop to generic entity update.
+  6. Sort drops in with the rest of the entities.
 
 ### Ugh Items
 

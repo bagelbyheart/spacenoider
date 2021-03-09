@@ -6,11 +6,14 @@ __lua__
 
 -- > tools
  
-function check(tbl)
- for k,v in pairs(tbl) do
-  print(k.." "..type(v))
- end
-end
+--function check(tbl)
+---- prints the contents and types
+---- of a table to console.
+---- mostly a debugging tool.
+-- for k,v in pairs(tbl) do
+--  print(k.." "..type(v))
+-- end
+--end
 
 function _tmrg(src,mod)
 -- takes a source and mod table
@@ -48,6 +51,8 @@ function _pprint(str,xoff,yoff,
 end
 
 function _tcpy(tbl)
+-- returns a shallow copy of
+-- the tbl it is fed.
  local t=tbl
  local o={}
  for k,v in pairs(t) do
@@ -57,9 +62,14 @@ function _tcpy(tbl)
 end
 
 function _null()
+-- i need to return null a lot.
 end
 
 function _rot(tbl)
+-- rotates a table by making a
+-- copy of the first element,
+-- removing it from the table,
+-- then adding it back.
  local tl=#tbl
  local fst=tbl[1]
  del(tbl,tbl[1])
@@ -67,11 +77,18 @@ function _rot(tbl)
 end
 
 function _mrot()
+-- this handles rotating between
+-- gane and menu loops, but is
+-- crazy simple. it will be
+-- replaced if i add more.
  _rot(_modes)
  _modes[1]()
 end
 
 function _mobj(obj,spd)
+-- this lets player 1 directly
+-- move an object without
+-- inertia.
  spd=obj.spd or spd or 1
  if (btn(⬅️)) then
   obj.x-=spd obj.r=false end
@@ -82,6 +99,9 @@ function _mobj(obj,spd)
 end
 
 function _ovrlp(a,b)
+-- this checks for overlap
+-- between two objects based on
+-- obj.x,y and obj.w,h.
  return not (a.x>b.x+b.w or
              a.y>b.y+b.h or
              a.x+a.w<b.x or
@@ -89,18 +109,25 @@ function _ovrlp(a,b)
 end
 
 function _frmct()
+-- just makes sure we track
+-- current frame.
  f=f or 0
  f+=1
  --if (f>149) then f=0 end
 end
 
 function _pswap()
+-- for every color in the
+-- palette except black, rotate
+-- by 6.
  for i=1,15 do
   pal(i,(i+6)%15+1)
  end
 end
 
 function _score()
+-- i honestly don't quite
+-- remember how this works.
  return {
   cu=0, cl=0, co="",
   hu=dget(62), hl=dget(63),
@@ -159,6 +186,9 @@ function _score()
 end
  
 function _dist(a,b)
+-- compares two objects x,y
+-- values and returns an
+-- absolute distance
  local d={}
  d.x=a.x-b.x
  d.y=a.y-b.y
@@ -169,6 +199,12 @@ function _dist(a,b)
 end
 
 function _nearest(a,tbl)
+-- finds the nearest entity to
+-- a in tbl, within 300 px.
+-- for every entity in the tbl,
+-- if closer than cc, make it
+-- the new cc and ct, if there
+-- is none, target is 64,-50.
  local cc=300
  local ct={x=64,y=-50}
  for i in all(tbl) do
@@ -182,6 +218,11 @@ function _nearest(a,tbl)
 end
 
 function _hseek(a,t)
+-- this provides inertia based
+-- tracking for a target.
+-- technically this should move
+-- into movement code and start
+-- using xd,yd vs sx,sy.
  a.sx=a.sx or 0
  a.sy=a.sy or 0
  if (a.x<t.x) then a.sx+=.2 end
@@ -209,18 +250,22 @@ function _init()
   "bagelbyheart_minspace_1")
 -- create a score object
  score=_score()
--- create the player object
+-- load all our types.
+-- (could probably be a wrapper)
  bullettypes()
  enemytypes()
  drops()
+-- first entities or {}
  entities=entities or {}
+-- make the player entity
  emake(player,60,90)
  tl={x=0,y=0}
  br={x=127,y=127}
  htl={x=0,y=br.y-18}
  hbr={x=tl.x+128,y=br.y}
 -- grab the player entity
--- faction 1 == player
+-- faction 1 == player.
+-- do we still need a p var?
  for e in all(entities) do
   if (e.faction==1) p=e
  end
@@ -275,10 +320,8 @@ function _mdra()
 -- but i'm not really using that
 -- control right now
  cls()
--- just like i want to upd all
--- entities for a demo mode i
--- also want to keep drawing
--- them
+-- this should be replaced with
+-- the fancy game entities loop.
  for e in all(entities) do
   e:dra()
  end
@@ -311,20 +354,45 @@ function _gint()
  _dra=_gdra
  score.init()
  p:rst()
- drops={}
--- set types of drops
+-- set types of drops.
+-- (move into drops function)
  dtypes={life,lasr,misl,blam}
+-- test example of drop spawns
  for i=1,#dtypes do
---  dtypes[i](i*16,60)
   emake(dtypes[i],i*16,60)
  end
+-- test examples of complicated
+-- enemy spawn types.
  emake(bomber,60,0)
- emake(driller,60,0)
+ emake(driller,60,0,
+       {
+        fpattern=function(self)
+         local s=self
+         if s.f==30 then
+          s.mov=_circles
+         elseif s.f==180 then
+          s.mov=_falldown
+         end
+        end
+       })
  emake(gunner,60,30)
  _dline(8,driller,10,10,"r")
 end
 
 function _gupd()
+-- before screen update, all
+-- entities are updated in
+-- groups based on their layer.
+-- 1 = player
+-- 2 = drops
+-- 4 = foes
+-- 5 = bullets
+-- 6 = explosions
+-- this means that the player 
+-- hitting a foe and killing it
+-- would stop it from shooting.
+-- but their bullet killing the
+-- foe would not.
  for layer=1,6 do
   for e in all(entities) do
    if e.l==layer then
@@ -332,23 +400,29 @@ function _gupd()
    end
   end
  end
+-- if the player is dead then
+-- we stop adding waves or
+-- processing drops and wait
+-- for reset.
  if p.chp<=0 then
   if (btnp(❎)) _mrot()
  else
   waves()
+-- this needs to move into the
+-- generic update function just
+-- before ondead()
  for e in all(entities) do
   if e.l==4 then
   if e.chp<=0 then
    if rnd(100)>80 then
---    rnd(dtypes)(e.x,e.y)
     emake(rnd(dtypes),e.x,e.y)
    end
   end
   end
  end
--- simple bounding based on 2
--- screens from player.
-  local b=256
+-- simple bounding based on
+-- dead reckoning top left and
+-- bottom right for bullets.
   for e in all(entities) do
    if e.l==5 then
     if e.x<tl.x-4 or
@@ -358,16 +432,18 @@ function _gupd()
      del(entities,e)
     end
    end
-   if e.n!="targ" then
-    if e.n=="laser" or
-       e.n=="missile" then
-     b=100
-    end
-    if abs(e.x-p.x)>b or
-       abs(e.y-p.y)>b then
-     del(entities,e)
-    end
-   end
+-- i don't think i need this
+-- anymore.
+--   if e.n!="targ" then
+--    if e.n=="laser" or
+--       e.n=="missile" then
+--     b=100
+--    end
+--    if abs(e.x-p.x)>b or
+--       abs(e.y-p.y)>b then
+--     del(entities,e)
+--    end
+--   end
   end
  end
 end
@@ -490,13 +566,6 @@ function waves()
     _dline(8,driller,10,10)
    end
   end
-end
-
-function wavetest()
- if f%150==0 then
-  wave+=1
-  _sline(driller,4)
- end
 end
 
 -->8
@@ -942,15 +1011,13 @@ end
 -- > fire functions
 function playfir(self)
  if _mode=="game" then
- if btnp(❎) then
-  self.guns[1]:make(self.x,self.y,
-             {faction=1})
---  self.guns[1].f(self.x,self.y,
---                 self.faction)
- end
- if btnp(🅾️) then
-  _rot(self.guns)
- end
+  if btnp(❎) then
+   self.guns[1]:make(self.x,self.y,
+              {faction=1})
+  end
+  if btnp(🅾️) then
+   _rot(self.guns)
+  end
  end
 end
 
@@ -963,25 +1030,16 @@ end
 
 -- > onhit functions
 function playhit(self,e)
---   if self.ifr<=0 then
---    for e in all(entities) do
---     if e.faction!=self.faction then
---     if _ovrlp(e,self) then
-      self.ifr=30
-      e.chp-=self.dam
-      --self.chp-=e.dam
-      sfx(self.hsfx)
-      boom(self.x,self.y)
---     end
---     end
---    end
---   else
--- decrease invincible frames
---    self.ifr-=1
---   end
+-- when the player hits an ent
+-- it gets 1 second of invinc.
+ self.ifr=30
+ e.chp-=self.dam
+ sfx(self.hsfx)
+ boom(self.x,self.y)
 end
 
 function bullhit(self,e)
+-- normal bullets die on hit.
  e.chp-=self.dam
  sfx(self.hsfx)
  boom(self.x,self.y)
