@@ -213,7 +213,7 @@ function _init()
  enemytypes()
  drops()
  entities=entities or {}
- pmake(60,90)
+ emake(player,60,90)
  tl={x=0,y=0}
  br={x=127,y=127}
  htl={x=0,y=br.y-18}
@@ -321,8 +321,9 @@ function _gint()
  elitecut=90
  for i=1,#dtypes do
 --  dtypes[i](i*16,60)
-  dmake(dtypes[i],i*16,60)
+  emake(dtypes[i],i*16,60)
  end
+ emake(bomber,60,0)
 end
 
 function _gupd()
@@ -342,7 +343,7 @@ function _gupd()
   if e.chp<=0 then
    if rnd(100)>80 then
 --    rnd(dtypes)(e.x,e.y)
-    dmake(rnd(dtypes),e.x,e.y)
+    emake(rnd(dtypes),e.x,e.y)
    end
   end
   end
@@ -512,6 +513,7 @@ end
 function enemytypes()
 
 gunner={
+ temp=foeent,
  n="gunner",
  spr={33,34,35},
  chp=4,
@@ -529,12 +531,13 @@ gunner={
 }
 
 bomber={
+ temp=foeent,
  n="bomber",
  spr={33,34,35},
  val=1000,
  aspd=10,
  gun=missile,
- mov=_circles,
+ mov={_falldown,_sideside},
  ebhv=function(self)
   local e=self
   if (e.elite) then
@@ -546,6 +549,7 @@ bomber={
 }
 
 driller={
+ temp=foeent,
  n="driller",
  elite=rnd(100),
  spr={17,18,19,20,21,22},
@@ -557,11 +561,17 @@ driller={
   end
  end
 }
+
+player={
+ temp=playent,
+ n="player"
+}
 end
 
 function bullettypes()
 
  vulcan={
+  temp=bullent,
   i={52},
   n="vulcan",
   spr={4,5,6},
@@ -571,10 +581,11 @@ function bullettypes()
   dam=2, lim=8,
   fsfx=9, hsfx=11,
   onhit=bullhit,
-  make=bmake
+  make=emake
  }
  
  laser={
+  temp=bullent,
   n="laser", --name
   i={53},    --icon
   spr={7,8},
@@ -589,10 +600,11 @@ function bullettypes()
    sfx(self.hsfx)
    boom(self.x,self.y)
   end,
-  make=bmake
+  make=emake
  }
  
  missile={
+  temp=bullent,
   n="homing", --name
   i={56},     --icon
   t=0,
@@ -602,7 +614,7 @@ function bullettypes()
   fsfx=9, hsfx=11,
   dam=6,
   lim=4,
-  make=bmake,
+  make=emake,
   mov=function(self)
    local enemies={}
    for e in all(entities) do
@@ -654,7 +666,7 @@ function genent(x,y)
   fpattern=_null,
   onhit=function(self) sfx(self.hsfx) end,
   ondead=simpledeath,
-  mov=_bouncedown,
+  mov=_falldown,
   upd=function(self)
    if self.chp and
       self.chp<=0 then
@@ -677,7 +689,13 @@ function genent(x,y)
      self.ifr-=1
     end
     self:fpattern()
-    self:mov()
+    if type(self.mov)=="table" then
+     for m in all(self.mov) do
+      m(self)
+     end
+    else
+     self:mov()
+    end
    end
   end,
   dra=function(self)
@@ -775,21 +793,8 @@ e=_tmrg(e,f)
  return e
 end
 
-function bmake(en,x,y,more)
- local e=_tcpy(bullent(x,y))
- e=_tmrg(e,en)
- if more then
-  e=_tmrg(e,more)
- end
- e:ebhv()
- if limitmake(e) then
-  add(entities,e)
-  sfx(e.fsfx)
- end
-end
-
 function emake(en,x,y,more)
- local e=_tcpy(foeent(x,y))
+ local e=_tcpy(en.temp(x,y))
  e=_tmrg(e,en)
  if more then
   e=_tmrg(e,more)
@@ -799,14 +804,6 @@ function emake(en,x,y,more)
   add(entities,e)
   sfx(e.fsfx)
  end
-end
-
-function pmake(x,y,more)
- local e=_tcpy(playent(x,y))
- if more then
-  e=_tmrg(e,more)
- end
- add(entities,e)
 end
 
 -->8
@@ -872,10 +869,10 @@ end
 
 -- > movement functions
 
-function _bouncedown(self)
-if self.xd==0 then
+function _falldown(self)
+--if self.xd==0 then
  self.yd=self.spd
-end
+--end
 if self.faction==1 then
  if self.yd>=0 then
   self.yd=-self.yd
@@ -888,21 +885,6 @@ end
 -- first we start the movement.
  self.x+=self.xd
  self.y+=self.yd
--- then we do checks about it.
--- lx and ux define the sides.
- local lx=10 ux=118
- if self.x >= ux or
-    self.x <= lx then
--- if we go past either, we
--- reverse xd
--- add xd to x
--- then pick the middle value
--- out of x, low, and upper
--- bounds to place our ship.
-  self.xd=-self.xd
-  self.x+=self.xd
-  self.x=mid(self.x,lx,ux)
- end
 -- if the entity goes a ways
 -- past the bottom of the
 -- screen it gets deleted.
@@ -937,9 +919,9 @@ function _bounceround(self)
 end
 
 function _sideside(self)
- if self.xd==0 then
-  self.xd=.5
- end
+-- if self.xd==0 then
+  self.xd=self.spd/2
+-- end
  if self.f%90<30 then
   self.x+=self.xd
  elseif self.f%90>=30 and
@@ -1172,6 +1154,7 @@ end
 
 function drops()
 life={
+ temp=dropent,
  hsfx=3,
  spr={57},
  w=4,
@@ -1186,6 +1169,7 @@ life={
 }
 
 lasr={
+ temp=dropent,
  spr={53},
  w=8,
  h=8,
@@ -1203,6 +1187,7 @@ lasr={
 }
 
 misl={
+ temp=dropent,
  spr={56},
  w=8,
  h=8,
@@ -1220,6 +1205,7 @@ misl={
 }
 
 blam={
+ temp=dropent,
  spr={51},
  w=8,
  h=8,
@@ -1253,18 +1239,6 @@ function dropent(x,y)
  }
 e=_tmrg(e,d)
  return e
-end
-
-function dmake(en,x,y,more)
- local e=dropent(x,y)
- e=_tmrg(e,en)
- if more then
-  e=_tmrg(e,more)
- end
- if limitmake(e) then
-  add(entities,e)
-  sfx(e.fsfx)
- end
 end
 
 __gfx__

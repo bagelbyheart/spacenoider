@@ -11,10 +11,8 @@ Right now I'm in the process of refactoring Spacenoider so it can be expanded in
 The following are big things that need to be addressed in a rough order of ease.
 
 1. Revamp spawn functions to be more precise. Currently just `_sline` and `dline`.
-2. Make movement accept tables of movement types.
-3. Unify all the `nmake()` functions.  
-  * This should be easy enough, pmake is the only one that doesn't already accept an `en` argument, and doing so allows things like player select later on.
-  * I can store the template function in the entity table.
+2. Make movement accept tables of movement types.  
+  * I sort of got this done, now I need to make the movement functions more atomic. At the moment, circle just seems to win over all others, and side to side only goes to the right.
 
 ### Ugh Items
 
