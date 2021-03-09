@@ -10,10 +10,7 @@ Right now I'm in the process of refactoring Spacenoider so it can be expanded in
 
 The following are big things that need to be addressed in a rough order of ease.
 
-1. Make elite a toggle not a cutoff.
-2. Remove elite randomization.
-3. Remove wave tracking.
-4. Do another pass checking for major redundancy.
+1. Do another pass checking for major redundancy.
 
 ### Ugh Items
 

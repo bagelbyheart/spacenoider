@@ -314,12 +314,6 @@ function _gint()
  drops={}
 -- set types of drops
  dtypes={life,lasr,misl,blam}
--- starting wave and percent
--- cutoff for elites
--- these could become a single
--- value
- wave=0
- elitecut=90
  for i=1,#dtypes do
 --  dtypes[i](i*16,60)
   emake(dtypes[i],i*16,60)
@@ -478,15 +472,12 @@ end
 -- on page 4.
 function waves()
   if f%150==0 then
-   wave+=1
--- make elites more likely
 -- 90   - 1*5/2 = 87.5
 -- 87.5 - 2*5/2 = 82.5
 -- 82.5 - 3*5/2 = 75
 -- elitecut can probably be
 -- removed and directly ref'd
 -- in spawn routine.
-   elitecut-=(wave*5)/2
    local rand=rnd(1)
 -- 15% to spawn bombers.
    if rand>=.85 then
@@ -547,10 +538,8 @@ bomber={
  mov={_circles,_falldown},
  ebhv=function(self)
   local e=self
-  if (e.elite) then
-  if (e.elite>elitecut) then
+  if e.elite then
    e.val=e.val*4
-  end
   end
  end
 }
@@ -558,11 +547,10 @@ bomber={
 driller={
  temp=foeent,
  n="driller",
- elite=rnd(100),
  spr={17,18,19,20,21,22},
  ebhv=function(self)
   local e=self
-  if (e.elite>elitecut) then
+  if e.elite then
    e.yd=e.spd*2 e.chp=e.chp*2
    e.val=e.val*4
   end
@@ -707,12 +695,10 @@ function genent(x,y)
   end,
   dra=function(self)
    if self.elite then
-    if self.elite>elitecut then
-     _pswap()
-    end
+    _pswap()
    end
-   if self.ifr>0 and
-      self.f%2==0 then
+   if self.ifr>0
+   and self.f%2==0 then
     _pswap()
    end
    if (self.chp>0) then
@@ -1018,33 +1004,6 @@ function simpledeath(self)
       self.y+(self.h/2))
  score.add(self.val)
  del(entities,self)
-end
--->8
--- > bullet functions
-
--- right now this function
--- runs alone on all bullets
--- but it should be reworked
--- to a per bullet function
--- that can be imported into
--- each bullet on creation
--- that way different types
--- can have different bounding
-function allbullets()
- for b in all(bullets) do
-  if b.f%b.aspd==0 then
-   _rot(b.spr)
-  end
-  b.f+=1
-  local ly=-20 uy=110
-  local lx=-10 ux=138
-  if b.y > uy or
-     b.y < ly or
-     b.x > ux or
-     b.x < lx then
-   del(bullets,b)
-  end
- end
 end
 
 -->8
