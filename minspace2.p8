@@ -324,6 +324,8 @@ function _gint()
   emake(dtypes[i],i*16,60)
  end
  emake(bomber,60,0)
+ emake(driller,60,0)
+ emake(gunner,60,30)
 end
 
 function _gupd()
@@ -527,6 +529,8 @@ gunner={
   spr(self.spr[1],self.x,
       self.y)
   pal()
+  print(self.xd,
+        self.x+4,self.y-4,10)
  end
 }
 
@@ -536,8 +540,9 @@ bomber={
  spr={33,34,35},
  val=1000,
  aspd=10,
+ r=5,
  gun=missile,
- mov={_falldown,_sideside},
+ mov={_circles,_falldown},
  ebhv=function(self)
   local e=self
   if (e.elite) then
@@ -711,8 +716,8 @@ function genent(x,y)
    if (self.chp>0) then
     spr(self.spr[1],
         self.x,self.y)
---    print(self.yd,
---          self.x,self.y,10)
+    print(self.xd,
+          self.x+4,self.y-4,10)
     pal()
    end
 
@@ -870,20 +875,12 @@ end
 -- > movement functions
 
 function _falldown(self)
---if self.xd==0 then
  self.yd=self.spd
---end
 if self.faction==1 then
  if self.yd>=0 then
   self.yd=-self.yd
  end
 end
--- using this causes an entity
--- to fall down, bouncing back
--- and forth as it hits the
--- sides of the screen.
--- first we start the movement.
- self.x+=self.xd
  self.y+=self.yd
 -- if the entity goes a ways
 -- past the bottom of the
@@ -919,19 +916,12 @@ function _bounceround(self)
 end
 
 function _sideside(self)
--- if self.xd==0 then
-  self.xd=self.spd/2
--- end
- if self.f%90<30 then
-  self.x+=self.xd
- elseif self.f%90>=30 and
-        self.f%90<60 then
-  self.x-=self.xd
- else
-  self.x=self.x
+ self.xd=self.spd
+ if flr(self.f/30%2)==0 then
+  self.xd=-self.xd
  end
+ self.x+=self.xd
 end
-
 
 function _circles(self)
  if self.mx==0 then

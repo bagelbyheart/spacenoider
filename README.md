@@ -12,7 +12,8 @@ The following are big things that need to be addressed in a rough order of ease.
 
 1. Revamp spawn functions to be more precise. Currently just `_sline` and `dline`.
 2. Make movement accept tables of movement types.  
-  * I sort of got this done, now I need to make the movement functions more atomic. At the moment, circle just seems to win over all others, and side to side only goes to the right.
+  * I sort of got this done, now I need to make the movement functions more atomic. At the moment, circle just seems to win over all others, but side to side is fixed!
+  * Ugh, still having trouble figuring out how to break out circles. probably need to do them in a dumber way.
 
 ### Ugh Items
 
@@ -29,3 +30,9 @@ The stuff past this is what I want to do after finishing the refactor.
 3. Model enemies off how they modify the player.  
   * _I'm not sure what I meant by this..._
 
+
+```lua
+for f=1,30 do
+ print(flr(f/10%2))
+end
+```
