@@ -1092,8 +1092,9 @@ end
 function playfir(self)
  if _mode=="game" then
   if btnp(❎) then
-   self.guns[1]:make(self.x,self.y,
-              {faction=1})
+   self.guns[1]:make(self.x+(self.w/2)-1,
+                     self.y+(self.h/2)-1,
+                     {faction=1})
   end
   if btnp(🅾️) then
    _rot(self.guns)
@@ -1104,7 +1105,9 @@ end
 function firerand(self)
  local frate=self.f%(90+(flr(rnd(60))-30))
  if self:frate()==0 then
-  self.gun:make(self.x,self.y,{faction=2})
+  self.gun:make(self.x+(self.w/2)-1,
+                self.y+(self.h/2)-1,
+				{faction=2})
  end
 end
 
