@@ -2,6 +2,8 @@
 
 A pico-8 game by [@bagelbyheart](https://twitter.com/bagelbyheart) based roughly on arcade games like Galaga and Asteroids.
 
+Try out the original on the [pico-8 forums!](https://www.lexaloffle.com/bbs/?tid=40248)
+
 ## Current Status
 
 *Refactor Completed! (mostly!)*
