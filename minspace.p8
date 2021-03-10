@@ -590,6 +590,11 @@ function genent(x,y)
    if (self.chp>0) then
     spr(self.spr[1],
         self.x,self.y)
+	if self.faction==1
+	and self.l==1 then
+	 spr(self.guns[1].ms[1],
+	     self.x-(self.guns[1].mw-self.w)/2,self.y-8)
+	end
     pal()
    end
 
@@ -782,6 +787,8 @@ function bullettypes()
  vulcan={
   temp=bullent,
   i={48,49},
+  ms={48,49},
+  mw=8,
   n="vulcan",
   spr={32,33,34,35},
   val=0,
@@ -796,6 +803,8 @@ function bullettypes()
   temp=bullent,
   n="laser", --name
   i={50,51},    --icon
+  ms={50,51},
+  mw=8,
   spr={36,37,38,39},
   w=1, h=7,
   spd=4,
@@ -814,6 +823,8 @@ function bullettypes()
   temp=bullent,
   n="homing", --name
   i={52,53},     --icon
+  ms={52,53},
+  mw=8,
   t=0,
   spr={40,41,42,43},
   w=4, h=4,
