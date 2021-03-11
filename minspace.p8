@@ -635,7 +635,7 @@ function playent(x,y)
   onhit=playhit,
   ondead=simpledeath,
   fpattern=playfir,
-  mov=playmov,
+  mov={playmov},
   rst=function(self)
    self.chp=8
    self.x,self.y=60,90
