@@ -20,10 +20,10 @@ function _tmrg(src,mod)
 -- and returns a combination of
 -- the two with any duplicate
 -- values favoring mod.
- local s=src
- local m=mod
+ --local s=src
+ local m=_tcpy(mod)
  local o=_tcpy(src)
- for k,v in pairs(mod) do
+ for k,v in pairs(m) do
   o[k]=v
  end
  return o
@@ -51,11 +51,15 @@ function _pprint(str,xoff,yoff,
 end
 
 function _tcpy(tbl)
--- returns a shallow copy of
+-- returns a deep copy of
 -- the tbl it is fed.
  local t=tbl
  local o={}
  for k,v in pairs(t) do
+  if type(v)=="table" then
+   local n=_tcpy(v)
+   v=n
+  end
   o[k]=v
  end
  return o
@@ -354,6 +358,8 @@ function _gint()
  ptime=0
 -- demodrops()
 -- demoenemies()
+ --emake(driller,64,64,{mov=_null})
+ --emake(driller,50,64,{mov=_null})
 end
 
 function _gupd()
@@ -768,6 +774,7 @@ function enemytypes()
  driller={
   temp=foeent,
   n="driller",
+  aspd=2,
   spr={16,17,18,19},
   ebhv=function(self)
    local e=self
@@ -1256,7 +1263,7 @@ function waves()
   _sline(4,gunner,5,20)
   _sline(4,gunner,5,20,'r')
  end
- if sf(12) then
+ if sf(15) then
   _sline(4,bomber,5,10)
   _sline(4,bomber,5,10,'r')
  end
