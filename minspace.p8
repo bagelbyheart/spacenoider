@@ -4,7 +4,8 @@ __lua__
 --minspace
 --by bagelbyheart
 
--- > tools
+-->8
+-- tools
  
 --function check(tbl)
 ---- prints the contents and types
@@ -81,7 +82,7 @@ function _rot(tbl)
 end
 
 function _mrot()
--- this handles rotating between
+-- this handles rotating thru
 -- gane and menu loops, but is
 -- crazy simple. it will be
 -- replaced if i add more.
@@ -98,8 +99,10 @@ function _mobj(obj,spd)
   obj.x-=spd obj.r=false end
  if (btn(➡️)) then
   obj.x+=spd obj.r=true end
- if (btn(⬆️)) then obj.y-=spd end
- if (btn(⬇️)) then obj.y+=spd end
+ if (btn(⬆️))
+  then obj.y-=spd end
+ if (btn(⬇️))
+  then obj.y+=spd end
 end
 
 function _ovrlp(a,b)
@@ -240,11 +243,11 @@ function _hseek(a,t)
 end
 
 -->8
--- > visual effects
+-- visual effects
 var="holder"
 
 -->8
--- > loops
+-- loops
 -- > main loop
 function _init()
 -- setup game modes
@@ -255,7 +258,7 @@ function _init()
 -- create a score object
  score=_score()
 -- load all our types.
--- (could probably be a wrapper)
+-- (could probably be wrapper)
  entitytypes()
  dtypes={life,blam,lasr,misl}
 -- make the player entity
@@ -316,13 +319,13 @@ end
 
 function _mdra()
 -- right now clear screen is in
--- each individual mode so i can
--- have a bit more control
--- but i'm not really using that
--- control right now
+-- each mode so i can have a 
+-- bit more control but i'm not
+-- really using that control
+-- right now
  cls()
 -- this should be replaced with
--- the fancy game entities loop.
+-- the fancy game ent loop.
  for e in all(entities) do
   e:dra()
  end
@@ -358,8 +361,6 @@ function _gint()
  ptime=0
 -- demodrops()
 -- demoenemies()
- --emake(driller,64,64,{mov=_null})
- --emake(driller,50,64,{mov=_null})
 end
 
 function _gupd()
@@ -434,15 +435,14 @@ end
 
 function hud()
 -- top left and bottom right
--- local tl={x=0,y=127-18}
--- local br={x=tl.x+128,y=tl.y+15}
 -- backing block
- rectfill(htl.x,htl.y,hbr.x,hbr.y,1)
+ rectfill(
+  htl.x,htl.y,hbr.x,hbr.y,1)
 -- score display
- print(score.co,htl.x+89,htl.y+3,
-       11)
+ print(
+  score.co,htl.x+89,htl.y+3,11)
 -- weapons display.
--- starts 51,2px offset from tl.
+-- start 51,2px offset from tl.
  for i=0,2 do
   spr(63,
       htl.x+(i*9)+51,
@@ -523,7 +523,7 @@ function waves()
 end
 
 -->8
--- > entity functions
+-- entity functions
 function genent(x,y)
  local e={
   f=0,
@@ -545,12 +545,13 @@ function genent(x,y)
   lim=16,
   fsfx=1,
   hsfx=1,
-  val=100, --unused by player curr
+  val=100, --unused by player
   make=emake,
   ebhv=_null,
   drops=rnddrop,
   fpattern=_null,
-  onhit=function(self) sfx(self.hsfx) end,
+  onhit=function(self)
+   sfx(self.hsfx) end,
   ondead=simpledeath,
   mov=_falldown,
   upd=function(self)
@@ -598,8 +599,11 @@ function genent(x,y)
         self.x,self.y)
 	if self.faction==1
 	and self.l==1 then
-	 spr(self.guns[1].ms[1],
-	     self.x-(self.guns[1].mw-self.w)/2,self.y-8)
+	 spr(
+    self.guns[1].ms[1],
+	  self.x-(
+     self.guns[1].mw-self.w
+     )/2,self.y-8)
 	end
     pal()
    end
@@ -613,12 +617,16 @@ end
 function shipent(x,y)
  local e=genent(x,y)
  local s={
-  chp=2, --ch and mh for player curr
+  --ch and mh for player curr
+  chp=2, 
   mhp=2,
-  guns={ngun}, --fire for player curr
-  gun=ngun, --unused for player curr
+  --fire for player curr
+  guns={ngun}, 
+  --unused for player curr
+  gun=ngun, 
   frate=function(self)
-   return self.f%(90+(flr(rnd(60))-30))
+   return self.f%(
+    90+(flr(rnd(60))-30))
   end
  }
  e=_tmrg(e,s)
@@ -722,7 +730,7 @@ function emake(en,x,y,more)
 end
 
 -->8
--- > entity types
+-- entity types
 function entitytypes()
  bullettypes()
  enemytypes()
@@ -875,9 +883,11 @@ function droptypes()
    sfx(self.hsfx)
    local have=0
    for i=1,#p.guns do
-    if (p.guns[i]==laser) p.guns[i].t=0 have=1
+    if (p.guns[i]==laser) then
+     p.guns[i].t=0 have=1 end
    end
-   if (have!=1) add(p.guns,laser)
+   if (have!=1) then
+    add(p.guns,laser) end
    del(entities,self)
   end
  }
@@ -891,10 +901,13 @@ function droptypes()
   onhit=function(self)
    sfx(self.hsfx)
    local have=0
+   local m=missile
    for i=1,#p.guns do
-    if (p.guns[i]==missile) p.guns[i].t=0 have=1
+    if (p.guns[i]==m) then
+     p.guns[i].t=0 have=1 end
    end
-   if (have!=1) add(p.guns,missile)
+   if (have!=1) then
+    add(p.guns,missile) end
    del(entities,self)
   end
  }
@@ -909,13 +922,12 @@ function droptypes()
    sfx(self.hsfx)
    bomb()
    del(entities,self)
-   --if (p.cbomb<p.mbomb) p.cbomb+=1
   end
  }
 end
 
 -->8
--- > control functions
+-- control functions
 
 function demoenemies()
  emake(bomber,60,0)
@@ -940,7 +952,7 @@ function limitmake(ent)
   local l=0;
   for e in all(entities) do
    if e.n==ent.n and
-      e.faction==ent.faction then
+    e.faction==ent.faction then
     l+=1
    end
   end
@@ -954,7 +966,8 @@ function limitmake(ent)
  end
 end
 
-function _sline(n,en,x,y,side,more)
+function _sline(
+ n,en,x,y,side,more)
 -- e = an entity function.
 -- n = number of e to spawn.
  fullent=emake(en,x,y,{test=0})
@@ -970,7 +983,8 @@ function _sline(n,en,x,y,side,more)
  end
 end
 
-function _dline(n,en,x,y,side,more)
+function _dline(
+ n,en,x,y,side,more)
  fullent=emake(en,x,y,{test=0})
  local xoff=fullent.w*1.5
  local yoff=-fullent.h*1.5
@@ -1089,9 +1103,10 @@ end
 function playfir(self)
  if _mode=="game" then
   if btnp(❎) then
-   self.guns[1]:make(self.x+(self.w/2)-1,
-                     self.y+(self.h/2)-10,
-                     {faction=1})
+   self.guns[1]:make(
+    self.x+(self.w/2)-1,
+    self.y+(self.h/2)-10,
+    {faction=1})
   end
   if btnp(🅾️) then
    _rot(self.guns)
@@ -1100,11 +1115,13 @@ function playfir(self)
 end
 
 function firerand(self)
- local frate=self.f%(90+(flr(rnd(60))-30))
+ local frate=self.f%(
+  90+(flr(rnd(60))-30))
  if self:frate()==0 then
-  self.gun:make(self.x+(self.w/2)-1,
-                self.y+(self.h/2)-1,
-				{faction=2})
+  self.gun:make(
+   self.x+(self.w/2)-1,
+   self.y+(self.h/2)-1,
+	 {faction=2})
  end
 end
 
@@ -1128,7 +1145,8 @@ end
 
 -- > ondead functions
 function hidedead(self)
- if (self.chp<=0) then self.y=256 end
+ if (self.chp<=0) then
+  self.y=256 end
 end
 
 function simpledeath(self)
@@ -1153,7 +1171,7 @@ function rnddrop(self)
 end
 
 -->8
--- > boom functions
+-- boom functions
 
 -- boom is what appears when
 -- something gets hit, it also
@@ -1176,8 +1194,8 @@ function boom(x,y)
     del(entities,self) end
   end,
   dra=function(self)
--- boom just draws a circle that
--- expands over 15 frames.
+-- boom just draws a circle
+-- expanding over 15 frames.
    circ(self.x,self.y,
         self.f/2,self.f%4+c)
   end
@@ -1188,14 +1206,15 @@ end
 
 -- currently bomb is triggered
 -- by the player pressing 🅾️
--- (see page 4) but i think will
+-- (see pg.4) but i think will
 -- eventually auto fire on get.
 
 function bomb()
  local c=8
  local already=0
  for b in all(entities) do
-  if (b.n=="bomb") then already=1 end
+  if (b.n=="bomb") then
+   already=1 end
  end
  if already==0 then
   e=genent(60,60)
@@ -1239,7 +1258,7 @@ function bomb()
 end
 
 -->8
--- > game flow
+-- game flow
 
 function sf(s)
  if ptime==s*30 then
