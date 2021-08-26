@@ -40,10 +40,9 @@ function _pprint(str,xoff,yoff,
  local x=((128-(#str*4))/2)+
          xoff
  local y=((128)/2)+yoff+1
- local outline={{-1,0},{1,0},
-                {0,-1},{0,1},
-                {-1,-1},{1,1},
-                {-1,1},{1,-1}}
+ local outline={
+  {-1,0},{1,0},{0,-1},{0,1},
+  {-1,-1},{1,1},{-1,1},{1,-1}}
  for t=1,#outline do
   print(str,x+outline[t][1],
         y+outline[t][2],col2)
